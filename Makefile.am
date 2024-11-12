@@ -3,4 +3,4 @@
  
  bin_PROGRAMS = FermionFlow_Lifetimes
  
- my_hadrons_app_SOURCES = FermionFlow_Lifetimes.cpp
+ FermionFlow_Lifetimes_SOURCES = FermionFlow_Lifetimes.cpp

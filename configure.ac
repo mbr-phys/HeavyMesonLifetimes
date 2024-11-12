@@ -1,5 +1,5 @@
 AC_PREREQ([2.69])
-AC_INIT([my-hadrons-app], [0.1], [name@domain.suf])
+AC_INIT([FermionFlow_Lifetimes], [0.1], [matthew.black@ed.ac.uk])
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
