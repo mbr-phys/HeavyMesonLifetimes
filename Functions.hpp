@@ -11,13 +11,6 @@ using namespace Hadrons;
 // ********* GENERAL **********
 // ****************************
 
-// check format of file stem name
-std::string fileStem(std::string cname) {
-    char last = cname.back();
-    if (last == '/') return cname;
-    else return cname+"/";
-}
-
 std::vector<std::string> split_gammas(std::string str, char del){
     std::string temp = "";
     std::vector<std::string> strings;
@@ -60,7 +53,7 @@ std::vector<unsigned int> coordVec(std::string coord) {
 // ****************************
 
 // dwf propagator 
-std::string make_dwfpropagator(Application &application, TestInputs::DwfPar &dwfPar, std::string src, int i, std::string boundary, std::string twist, std::string gauge, std::string add){
+std::string make_dwfpropagator(Application &application, XmlInputs::DwfPar &dwfPar, std::string src, int i, std::string boundary, std::string twist, std::string gauge, std::string add){
     std::string solve_name = "CG_" + dwfPar.quark;
     if (i == 0) {
         // action
@@ -94,7 +87,7 @@ std::string make_dwfpropagator(Application &application, TestInputs::DwfPar &dwf
     return prop_name;
 }
 
-std::string make_mixeddwfpropagator(Application &application, TestInputs::DwfPar &dwfPar, std::string src, int i, std::string boundary, std::string twist, std::string gauge, std::string Fgauge, std::string add){
+std::string make_mixeddwfpropagator(Application &application, XmlInputs::DwfPar &dwfPar, std::string src, int i, std::string boundary, std::string twist, std::string gauge, std::string Fgauge, std::string add){
     std::string solve_name = "MixedCGm_" + dwfPar.quark;
     if (i == 0) {
         MAction::DWFF::Par FactionPar;
@@ -140,7 +133,7 @@ std::string make_mixeddwfpropagator(Application &application, TestInputs::DwfPar
     return prop_name;
 }
 
-std::string make_moebiusdwfpropagator(Application &application, TestInputs::MdwfPar &dwfPar, std::string src, int i, std::string boundary, std::string twist, std::string gauge, std::string add){
+std::string make_moebiusdwfpropagator(Application &application, XmlInputs::MdwfPar &dwfPar, std::string src, int i, std::string boundary, std::string twist, std::string gauge, std::string add){
     std::string solve_name = "CGm_" + dwfPar.quark;
     if (i == 0) {
         MAction::MobiusDWF::Par actionPar;
@@ -175,7 +168,7 @@ std::string make_moebiusdwfpropagator(Application &application, TestInputs::Mdwf
     return prop_name;
 }
 
-std::string make_mixedmoebiusdwfpropagator(Application &application, TestInputs::MdwfPar &dwfPar, std::string src, int i, std::string boundary, std::string twist, std::string gauge, std::string Fgauge, std::string add){
+std::string make_mixedmoebiusdwfpropagator(Application &application, XmlInputs::MdwfPar &dwfPar, std::string src, int i, std::string boundary, std::string twist, std::string gauge, std::string Fgauge, std::string add){
     std::string solve_name = "MixedCGm_" + dwfPar.quark;
     if (i == 0) {
         MAction::MobiusDWFF::Par FactionPar;
@@ -243,7 +236,7 @@ std::string make_Z2src(Application &application, int time, std::string add){
 }
 
 // Jacobi smeared source
-std::string make_SmrSrc(Application &application, TestInputs::SmearPar &smearPar, std::string src, std::string gauge, std::string add){
+std::string make_SmrSrc(Application &application, XmlInputs::SmearPar &smearPar, std::string src, std::string gauge, std::string add){
     std::string sm_src = "sm_" + src + add;
 
     MSource::JacobiSmear::Par smr_src;

@@ -68,7 +68,7 @@ namespace XmlInputs
     {
     public:
         GRID_SERIALIZABLE_CLASS_MEMBERS(MesonPar,
-                                        std::string, cont_name,
+                                        std::string, file_name,
                                         std::string, gamma_src,
                                         std::string, gamma_snk,
                                         std::string, rhq_impr,
