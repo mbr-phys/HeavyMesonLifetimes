@@ -1,0 +1,81 @@
+<?xml version="1.0"?>
+<grid>
+    <runPar>
+        <runId>test</runId>
+        <appDb>Schedule.db</appDb>
+        <restore>false</restore>
+        <scheduler>naive</scheduler>
+    </runPar>
+    <configPar>
+        <fileStem>/path/to/ckpoint_lat</fileStem> 
+        <begin>280</begin>
+        <end>281</end> <!-- must be gtr than final config to be used -->
+        <step>40</step>
+        <source_loc>0 21 23 19</source_loc> 
+        <sources>
+            <elem>0</elem>
+            <elem>32</elem>
+        </sources>
+        <deltaTs>
+            <elem>32</elem>
+        </deltaTs>
+        <Tmax>64</Tmax>
+    </configPar>
+    <hdwfPar>
+        <quark>b</quark>
+        <mass>0.45</mass>
+        <Ls>12</Ls>
+        <M5>1.0</M5>
+        <b>1.5</b>
+        <c>0.5</c>
+        <residual>1.0e-18</residual>
+        <maxiter>100000</maxiter>
+        <maxiterIn>100000</maxiterIn>
+        <maxiterOut>10</maxiterOut>
+        <prop>none</prop>
+    </hdwfPar>
+    <sdwfPar>
+        <quark>s</quark>
+        <mass>0.02477</mass>
+        <Ls>16</Ls>
+        <M5>1.8</M5>
+        <residual>1.0e-08</residual>
+        <maxiter>10000</maxiter>
+        <maxiterIn>100000</maxiterIn>
+        <maxiterOut>10</maxiterOut>
+        <prop>none</prop>
+    </sdwfPar>
+    <mesonPar>
+        <file_name>ApplicationTest</file_name>
+        <!-- <gamma_src></gamma_src>
+        <gamma_snk></gamma_snk>-->
+        <gamma_src>Gamma5 Gamma5 GammaTGamma5 GammaTGamma5 GammaX GammaY GammaZ GammaT</gamma_src>
+        <gamma_snk>Gamma5 GammaTGamma5 Gamma5 GammaTGamma5 GammaX GammaY GammaZ GammaT</gamma_snk>
+        <rhq_impr>no</rhq_impr>
+        <n2_min>0</n2_min>
+        <n2_max>0</n2_max>
+        <ss>1</ss>
+        <moms>all</moms>
+    </mesonPar>
+    <flowPar>
+        <output></output>
+        <action>Wilson</action>
+        <steps>10</steps>
+        <step_size>0.01</step_size>
+        <meas_interval>10</meas_interval>
+        <Tcoarsen>9.01</Tcoarsen>
+        <maxTau></maxTau>
+        <bc>-1</bc>
+    </flowPar>
+    <stoutPar>
+        <steps>3</steps>
+        <rho>0.1</rho>
+        <orthog></orthog>
+    </stoutPar>
+    <smearPar>
+        <smear>1</smear>
+        <width>6.5</width>
+        <iterations>100</iterations>
+        <orthog>3</orthog>
+    </smearPar>
+</grid>
