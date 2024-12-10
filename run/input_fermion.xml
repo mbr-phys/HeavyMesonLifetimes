@@ -51,6 +51,7 @@
         <gamma_snk></gamma_snk>-->
         <gamma_src>Gamma5 Gamma5 GammaTGamma5 GammaTGamma5 GammaX GammaY GammaZ GammaT</gamma_src>
         <gamma_snk>Gamma5 GammaTGamma5 Gamma5 GammaTGamma5 GammaX GammaY GammaZ GammaT</gamma_snk>
+        <light>1</light>
         <rhq_impr>no</rhq_impr>
         <n2_min>0</n2_min>
         <n2_max>0</n2_max>

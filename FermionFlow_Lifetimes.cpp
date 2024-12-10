@@ -17,6 +17,7 @@ struct XmlPar
     XmlInputs::ConfigPar   configPar;
     XmlInputs::MdwfPar     mdwfParh;
     XmlInputs::DwfPar      dwfPars;
+    XmlInputs::DwfPar      dwfParl;
     XmlInputs::MesonPar    mesonPar;
     XmlInputs::FlowPar     flowPar;
     XmlInputs::StoutPar    stoutPar;
@@ -42,6 +43,7 @@ int main(int argc, char *argv[])
     read(reader, "configPar",   xmlPar.configPar);
     read(reader, "hdwfPar",     xmlPar.mdwfParh);
     read(reader, "sdwfPar",     xmlPar.dwfPars);
+    read(reader, "ldwfPar",     xmlPar.dwfParl);
     read(reader, "mesonPar",    xmlPar.mesonPar);
     read(reader, "flowPar",     xmlPar.flowPar);
     read(reader, "stoutPar",    xmlPar.stoutPar);
@@ -100,8 +102,8 @@ int main(int argc, char *argv[])
 
     std::string gamma_pairs = "";
     if (xmlPar.mesonPar.gamma_snk == "") {
-        gamma_pairs = "all";}
-    else {
+        gamma_pairs = "all";
+    } else {
         std::vector<std::string> gamma_src_vec = split_gammas(xmlPar.mesonPar.gamma_src,' ');
         std::vector<std::string> gamma_snk_vec = split_gammas(xmlPar.mesonPar.gamma_snk,' ');
         // program expects same number of snk and src gammas
@@ -130,6 +132,7 @@ int main(int argc, char *argv[])
 
     std::vector<std::string> hqs = {};
     std::vector<std::string> sqs = {};
+    std::vector<std::string> lqs = {};
     std::vector<std::string> step0 = {};
     for (int k = 0; k < srcs.size(); k++) {
         int j = 0;
@@ -146,21 +149,57 @@ int main(int argc, char *argv[])
         application.createModule<MContraction::WardIdentity>("WardId_"+xmlPar.mdwfParh.quark+sources[k],WPar);
         step0.push_back("WardId_"+xmlPar.mdwfParh.quark+sources[k]);
 
-        std ::string gsrc = make_SmrSrc(application, xmlPar.smearPar, srcs[k], "trans_gauge", "_"+sources[k]);
         // strange quark
-        std::string name_sq1 = make_mixeddwfpropagator(application, xmlPar.dwfPars, gsrc, j, boundary, twist, "trans_gauge", "trans_gaugeF", "_"+sources[k]);
+        std::string name_sq1;
+        std ::string gsrc;
+        if (xmlPar.smearPar.smear == 1) {
+            gsrc = make_SmrSrc(application, xmlPar.smearPar, srcs[k], "trans_gauge", "_"+sources[k]);
+            name_sq1 = make_mixeddwfpropagator(application, xmlPar.dwfPars, gsrc, j, boundary, twist, "trans_gauge", "trans_gaugeF", "_"+sources[k]);
+        } else {
+            name_sq1 = make_mixeddwfpropagator(application, xmlPar.dwfPars, srcs[k], j, boundary, twist, "trans_gauge", "trans_gaugeF", "_"+sources[k]);
+        }
         sqs.push_back(name_sq1);
 
         MContraction::WardIdentity::Par SPar;
         SPar.prop = name_sq1+"_5d";
         SPar.action = "DWF_action_" + xmlPar.dwfPars.quark + "_" + sources[0];
         SPar.mass = xmlPar.dwfPars.mass;
-        SPar.source = srcs[k];
+        if (xmlPar.smearPar.smear == 1) {
+            SPar.source = gsrc;
+        } else {
+            SPar.source = srcs[k];
+        }
         application.createModule<MContraction::WardIdentity>("WardId_"+xmlPar.dwfPars.quark+sources[k],SPar);
         step0.push_back("WardId_"+xmlPar.dwfPars.quark+sources[k]);
+
+        if (xmlPar.mesonPar.light == 1) {
+            // light quark
+            std::string name_lq1;
+            if (xmlPar.smearPar.smear == 1) {
+                name_lq1 = make_mixeddwfpropagator(application, xmlPar.dwfParl, gsrc, j, boundary, twist, "trans_gauge", "trans_gaugeF", "_"+sources[k]);
+            } else {
+                name_lq1 = make_mixeddwfpropagator(application, xmlPar.dwfParl, srcs[k], j, boundary, twist, "trans_gauge", "trans_gaugeF", "_"+sources[k]);
+            }
+            lqs.push_back(name_lq1);
+
+            MContraction::WardIdentity::Par LPar;
+            LPar.prop = name_lq1+"_5d";
+            LPar.action = "DWF_action_" + xmlPar.dwfParl.quark + "_" + sources[0];
+            LPar.mass = xmlPar.dwfParl.mass;
+            if (xmlPar.smearPar.smear == 1) {
+                LPar.source = gsrc;
+            } else {
+                LPar.source = srcs[k];
+            application.createModule<MContraction::WardIdentity>("WardId_"+xmlPar.dwfParl.quark+sources[k],LPar);
+            step0.push_back("WardId_"+xmlPar.dwfParl.quark+sources[k]);
+            }
+        }
     }
     std::vector<std::string> qs = hqs; 
     qs.insert(qs.end(), sqs.begin(), sqs.end());
+    if (xmlPar.mesonPar.light == 1) {
+        qs.insert(qs.end(), lqs.begin(), lqs.end());
+    }
 
     // gradient flow
     MGradientFlow::WilsonFlow::Par gfPar;
@@ -195,17 +234,32 @@ int main(int argc, char *argv[])
     for (int q = 0; q < hqs.size(); q++) {
         std::string name_sq1 = sqs[q], name_hq1 = hqs[q], tm = sources[q];
         
+        std::string SM = "PP";
+        if (xmlPar.smearPar.smear == 1) SM = "SP";
         // 2pt contractions
-        step0.push_back(make_contraction(application, "sh_SP_t"+tm+"_0.00", name_sq1, name_hq1, gamma_pairs, snk_str, "", true, false));
-        step0.push_back(make_contraction(application, "ss_SP_t"+tm+"_0.00", name_sq1, name_sq1, gamma_pairs, snk_str, "", true, false));
+        step0.push_back(make_contraction(application, "sh_"+SM+"_t"+tm+"_0.00", name_sq1, name_hq1, gamma_pairs, snk_str, "", true, false));
+        step0.push_back(make_contraction(application, "ss_"+SM+"_t"+tm+"_0.00", name_sq1, name_sq1, gamma_pairs, snk_str, "", true, false));
         step0.push_back(make_contraction(application, "hh_PP_t"+tm+"_0.00", name_hq1, name_hq1, gamma_pairs, snk_str, "", true, false));
+        if (xmlPar.mesonPar.light == 1) {
+            std::string name_lq1 = lqs[q];
+            step0.push_back(make_contraction(application, "lh_"+SM+"_t"+tm+"_0.00", name_lq1, name_hq1, gamma_pairs, snk_str, "", true, false));
+            step0.push_back(make_contraction(application, "ls_"+SM+"_t"+tm+"_0.00", name_lq1, name_sq1, gamma_pairs, snk_str, "", true, false));
+            step0.push_back(make_contraction(application, "ll_"+SM+"_t"+tm+"_0.00", name_lq1, name_lq1, gamma_pairs, snk_str, "", true, false));
+        }
 
         // 2pt contractions with smearing at source and sink
         // only at zero flow time
-        if (xmlPar.mesonPar.ss == 1) {
+        if (xmlPar.mesonPar.ss == 1 && xmlPar.smearPar.smear == 1) {
             std::string name_sqsm = make_SmrSrc(application, xmlPar.smearPar, name_sq1, "trans_gauge", "_smr");
             step0.push_back(make_contraction(application, "sh_SS_t"+tm+"_0.00", name_sqsm, name_hq1, gamma_pairs, snk_str, "", true, false));
             step0.push_back(make_contraction(application, "ss_SS_t"+tm+"_0.00", name_sqsm, name_sqsm, gamma_pairs, snk_str, "", true, false));
+            if (xmlPar.mesonPar.light == 1) {
+                std::string name_lq1 = lqs[q];
+                std::string name_lqsm = make_SmrSrc(application, xmlPar.smearPar, name_lq1, "trans_gauge", "_smr");
+                step0.push_back(make_contraction(application, "lh_SS_t"+tm+"_0.00", name_lqsm, name_hq1, gamma_pairs, snk_str, "", true, false));
+                step0.push_back(make_contraction(application, "ls_SS_t"+tm+"_0.00", name_lqsm, name_sqsm, gamma_pairs, snk_str, "", true, false));
+                step0.push_back(make_contraction(application, "ll_SS_t"+tm+"_0.00", name_lqsm, name_lqsm, gamma_pairs, snk_str, "", true, false));
+            }
         }
 
         // loop over all source-source separations for 3pt contractions
@@ -215,9 +269,15 @@ int main(int argc, char *argv[])
             std::string name_sq2 = sqs[r], name_hq2 = hqs[r];
 
             // 3pt weak non-eye contractions
-            step0.push_back(make_weaknoneye(application, name_hq1, name_sq1, name_sq2, name_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "DeltaHs2_G5_G5_t"+tm+"_dt"+dts.str()+"_0.00"));
-            step0.push_back(make_weaknoneye(application, name_sq1, name_hq1, name_sq2, name_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "DeltaHs0_T1_G5_G5_t"+tm+"_dt"+dts.str()+"_0.00"));
-            step0.push_back(make_weaknoneye(application, name_sq1, name_sq1, name_hq2, name_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "DeltaHs0_T2_G5_G5_t"+tm+"_dt"+dts.str()+"_0.00"));
+            step0.push_back(make_weaknoneye(application, name_hq1, name_sq1, name_sq2, name_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "sh_DeltaHs2_G5_G5_t"+tm+"_dt"+dts.str()+"_0.00"));
+            step0.push_back(make_weaknoneye(application, name_sq1, name_hq1, name_sq2, name_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "sh_DeltaHs0_T1_G5_G5_t"+tm+"_dt"+dts.str()+"_0.00"));
+            step0.push_back(make_weaknoneye(application, name_sq1, name_sq1, name_hq2, name_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "sh_DeltaHs0_T2_G5_G5_t"+tm+"_dt"+dts.str()+"_0.00"));
+            if (xmlPar.mesonPar.light == 1) {
+                std::string name_lq1 = lqs[q], name_lq2 = lqs[r];
+                step0.push_back(make_weaknoneye(application, name_hq1, name_lq1, name_lq2, name_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "lh_DeltaHs2_G5_G5_t"+tm+"_dt"+dts.str()+"_0.00"));
+                step0.push_back(make_weaknoneye(application, name_lq1, name_hq1, name_lq2, name_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "lh_DeltaHs0_T1_G5_G5_t"+tm+"_dt"+dts.str()+"_0.00"));
+                step0.push_back(make_weaknoneye(application, name_lq1, name_lq1, name_hq2, name_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "lh_DeltaHs0_T2_G5_G5_t"+tm+"_dt"+dts.str()+"_0.00"));
+            }
         }
     }
     // add gauge observables important along gradient flow
@@ -257,9 +317,10 @@ int main(int argc, char *argv[])
             application.createModule<MGradientFlow::WilsonFermionFlow>(WF1,wfPar);
             
             // loop over quark sources
-            for (int y = 0; y < qs.size()/2; y++) {
+            int split = (xmlPar.mesonPar.light == 1) ? (3) : (2);
+            for (int y = 0; y < qs.size()/split; y++) {
                 std::stringstream ys; ys << y;
-                int z = y + qs.size()/2;
+                int z = y + qs.size()/split;
                 std::stringstream zs; zs << z;
                 std::string flow_hq1 = WF1 + "_q" + ys.str() + "_1";
                 std::string flow_sq1 = WF1 + "_q" + zs.str() + "_1";
@@ -269,20 +330,39 @@ int main(int argc, char *argv[])
                 stepi.push_back(make_contraction(application, "sh_t"+tm+"_"+st.str(), flow_sq1, flow_hq1, gamma_pairs, snk_str, "", true, false));
                 stepi.push_back(make_contraction(application, "ss_t"+tm+"_"+st.str(), flow_sq1, flow_sq1, gamma_pairs, snk_str, "", true, false));
                 stepi.push_back(make_contraction(application, "hh_t"+tm+"_"+st.str(), flow_hq1, flow_hq1, gamma_pairs, snk_str, "", true, false));
+                if (xmlPar.mesonPar.light == 1) {
+                    int zl = z + qs.size()/split;
+                    std::stringstream zls; zls << zl;
+                    std::string flow_lq1 = WF1 + "_q" + zls.str() + "_1";
+                    stepi.push_back(make_contraction(application, "lh_t"+tm+"_"+st.str(), flow_lq1, flow_hq1, gamma_pairs, snk_str, "", true, false));
+                    stepi.push_back(make_contraction(application, "ls_t"+tm+"_"+st.str(), flow_lq1, flow_sq1, gamma_pairs, snk_str, "", true, false));
+                    stepi.push_back(make_contraction(application, "ll_t"+tm+"_"+st.str(), flow_lq1, flow_lq1, gamma_pairs, snk_str, "", true, false));
+                }
 
                 // loop over all source-source separations for 3pt contractions
                 for (int dT : xmlPar.configPar.deltaTs) {
                     std::stringstream dts; dts << dT;
                     int xy = (stp*y + dT < Tmax) ? (y + dT/stp) : (stp*y + dT - Tmax)/stp;
-                    int xz = xy + qs.size()/2; 
+                    int xz = xy + qs.size()/split; 
                     std::stringstream xys, xzs; xys << xy; xzs << xz;
                     std::string flow_hq2 = WF1 + "_q" + xys.str() + "_1";
                     std::string flow_sq2 = WF1 + "_q" + xzs.str() + "_1";
                     
                     // 3pt weak non-eye contractions
-                    stepi.push_back(make_weaknoneye(application, flow_hq1, flow_sq1, flow_sq2, flow_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "DeltaHs2_G5_G5_t"+tm+"_dt"+dts.str()+"_"+st.str()));
-                    stepi.push_back(make_weaknoneye(application, flow_sq1, flow_hq1, flow_sq2, flow_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "DeltaHs0_T1_G5_G5_t"+tm+"_dt"+dts.str()+"_"+st.str()));
-                    stepi.push_back(make_weaknoneye(application, flow_sq1, flow_sq1, flow_hq2, flow_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "DeltaHs0_T2_G5_G5_t"+tm+"_dt"+dts.str()+"_"+st.str()));
+                    stepi.push_back(make_weaknoneye(application, flow_hq1, flow_sq1, flow_sq2, flow_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "sh_DeltaHs2_G5_G5_t"+tm+"_dt"+dts.str()+"_"+st.str()));
+                    stepi.push_back(make_weaknoneye(application, flow_sq1, flow_hq1, flow_sq2, flow_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "sh_DeltaHs0_T1_G5_G5_t"+tm+"_dt"+dts.str()+"_"+st.str()));
+                    stepi.push_back(make_weaknoneye(application, flow_sq1, flow_sq1, flow_hq2, flow_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "sh_DeltaHs0_T2_G5_G5_t"+tm+"_dt"+dts.str()+"_"+st.str()));
+                    if (xmlPar.mesonPar.light == 1) {
+                        int zl = z + qs.size()/split;
+                        std::stringstream zls; zls << zl;
+                        std::string flow_lq1 = WF1 + "_q" + zls.str() + "_1";
+                        int xzl = xz + qs.size()/split;
+                        std::stringstream xzls; xzls << xzl;
+                        std::string flow_lq2 = WF1 + "_q" + xzls.str() + "_1";
+                        stepi.push_back(make_weaknoneye(application, flow_hq1, flow_lq1, flow_lq2, flow_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "lh_DeltaHs2_G5_G5_t"+tm+"_dt"+dts.str()+"_"+st.str()));
+                        stepi.push_back(make_weaknoneye(application, flow_lq1, flow_hq1, flow_lq2, flow_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "lh_DeltaHs0_T1_G5_G5_t"+tm+"_dt"+dts.str()+"_"+st.str()));
+                        stepi.push_back(make_weaknoneye(application, flow_lq1, flow_lq1, flow_hq2, flow_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "lh_DeltaHs0_T2_G5_G5_t"+tm+"_dt"+dts.str()+"_"+st.str()));
+                    }
                 }
             }
             stepi.push_back(WF1);
@@ -295,7 +375,8 @@ int main(int argc, char *argv[])
             stepi.push_back(WF1);
             
             // make a single group for all contractions at one flow time
-            corrgroups.push_back(make_corrgroup(application, fM1, stepi));}
+            corrgroups.push_back(make_corrgroup(application, fM1, stepi));
+        }
         flowMod = fM1; WFF = WF1;
     }
 
