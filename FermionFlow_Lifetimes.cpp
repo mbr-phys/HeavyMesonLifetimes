@@ -310,6 +310,8 @@ int main(int argc, char *argv[])
         fM1 = "FlowTime_t" + st.str(); WF1 = "WilsonFlow_t" + st.str();
         std::vector<std::string> stepi = {};
 
+        std::string time = "_t" + st.str();
+
         // only perform contractions for set intervals along the evolution
         // always perform contractions at final flow time
         if ((t % xmlPar.flowPar.meas_interval == 0) || (t == xmlPar.flowPar.steps)) {
@@ -319,11 +321,9 @@ int main(int argc, char *argv[])
             // loop over quark sources
             int split = (xmlPar.mesonPar.light == 1) ? (3) : (2);
             for (int y = 0; y < qs.size()/split; y++) {
-                std::stringstream ys; ys << y;
                 int z = y + qs.size()/split;
-                std::stringstream zs; zs << z;
-                std::string flow_hq1 = WF1 + "_q" + ys.str() + "_1";
-                std::string flow_sq1 = WF1 + "_q" + zs.str() + "_1";
+                std::string flow_hq1 = qs[y]+time;
+                std::string flow_sq1 = qs[z]+time;
                 std::string tm = sources[y];
 
                 // 2pt contractions
@@ -332,8 +332,7 @@ int main(int argc, char *argv[])
                 stepi.push_back(make_contraction(application, "hh_t"+tm+"_"+st.str(), flow_hq1, flow_hq1, gamma_pairs, snk_str, "", true, false));
                 if (xmlPar.mesonPar.light == 1) {
                     int zl = z + qs.size()/split;
-                    std::stringstream zls; zls << zl;
-                    std::string flow_lq1 = WF1 + "_q" + zls.str() + "_1";
+                    std::string flow_lq1 = qs[zl]+time;
                     stepi.push_back(make_contraction(application, "lh_t"+tm+"_"+st.str(), flow_lq1, flow_hq1, gamma_pairs, snk_str, "", true, false));
                     stepi.push_back(make_contraction(application, "ls_t"+tm+"_"+st.str(), flow_lq1, flow_sq1, gamma_pairs, snk_str, "", true, false));
                     stepi.push_back(make_contraction(application, "ll_t"+tm+"_"+st.str(), flow_lq1, flow_lq1, gamma_pairs, snk_str, "", true, false));
@@ -344,9 +343,8 @@ int main(int argc, char *argv[])
                     std::stringstream dts; dts << dT;
                     int xy = (stp*y + dT < Tmax) ? (y + dT/stp) : (stp*y + dT - Tmax)/stp;
                     int xz = xy + qs.size()/split; 
-                    std::stringstream xys, xzs; xys << xy; xzs << xz;
-                    std::string flow_hq2 = WF1 + "_q" + xys.str() + "_1";
-                    std::string flow_sq2 = WF1 + "_q" + xzs.str() + "_1";
+                    std::string flow_hq2 = qs[xy]+time;
+                    std::string flow_sq2 = qs[xz]+time;
                     
                     // 3pt weak non-eye contractions
                     stepi.push_back(make_weaknoneye(application, flow_hq1, flow_sq1, flow_sq2, flow_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "sh_DeltaHs2_G5_G5_t"+tm+"_dt"+dts.str()+"_"+st.str()));
@@ -354,11 +352,9 @@ int main(int argc, char *argv[])
                     stepi.push_back(make_weaknoneye(application, flow_sq1, flow_sq1, flow_hq2, flow_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "sh_DeltaHs0_T2_G5_G5_t"+tm+"_dt"+dts.str()+"_"+st.str()));
                     if (xmlPar.mesonPar.light == 1) {
                         int zl = z + qs.size()/split;
-                        std::stringstream zls; zls << zl;
-                        std::string flow_lq1 = WF1 + "_q" + zls.str() + "_1";
+                        std::string flow_lq1 = qs[zl]+time;
                         int xzl = xz + qs.size()/split;
-                        std::stringstream xzls; xzls << xzl;
-                        std::string flow_lq2 = WF1 + "_q" + xzls.str() + "_1";
+                        std::string flow_lq2 = qs[xzl]+time;
                         stepi.push_back(make_weaknoneye(application, flow_hq1, flow_lq1, flow_lq2, flow_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "lh_DeltaHs2_G5_G5_t"+tm+"_dt"+dts.str()+"_"+st.str()));
                         stepi.push_back(make_weaknoneye(application, flow_lq1, flow_hq1, flow_lq2, flow_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "lh_DeltaHs0_T1_G5_G5_t"+tm+"_dt"+dts.str()+"_"+st.str()));
                         stepi.push_back(make_weaknoneye(application, flow_lq1, flow_lq1, flow_hq2, flow_hq2, Gamma::Algebra::Gamma5, Gamma::Algebra::Gamma5, "", "lh_DeltaHs0_T2_G5_G5_t"+tm+"_dt"+dts.str()+"_"+st.str()));
@@ -381,10 +377,10 @@ int main(int argc, char *argv[])
     }
 
     // pass all groups of contractions to a single output file
-    MIO::WriteCorrelatorGroup::Par WCPar;
-    WCPar.contractions = corrgroups;
+    MIO::WriteResultGroup::Par WCPar;
+    WCPar.results = corrgroups;
     WCPar.output = xmlPar.mesonPar.file_name;
-    application.createModule<MIO::WriteCorrelatorGroup>("WriteToFile",WCPar);
+    application.createModule<MIO::WriteResultGroup>("WriteToFile",WCPar);
 
     // execution
     application.saveParameterFile("RunFermionFlow_Lifetimes.xml");

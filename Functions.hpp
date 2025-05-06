@@ -332,9 +332,9 @@ std::string make_wardid(Application &application, std::string prop, std::string 
 }
 
 std::string make_corrgroup(Application &application, std::string name, std::vector<std::string> contractions) {
-    MIO::CorrelatorGroup::Par CGPar;
-    CGPar.contractions = contractions;
+    MIO::ResultGroup::Par CGPar;
+    CGPar.results = contractions;
 
-    application.createModule<MIO::CorrelatorGroup>(name,CGPar);
+    application.createModule<MIO::ResultGroup>(name,CGPar);
     return name;
 }
