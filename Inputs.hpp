@@ -71,7 +71,6 @@ namespace XmlInputs
                                         std::string, file_name,
                                         std::string, gamma_src,
                                         std::string, gamma_snk,
-                                        std::string, rhq_impr,
                                         unsigned int, light,
                                         unsigned int, n2_min,
                                         unsigned int, n2_max,
