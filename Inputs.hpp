@@ -97,7 +97,7 @@ namespace XmlInputs
                                         int, steps,
                                         double, step_size,
                                         int, meas_interval,
-                                        int, Tcoarsen,
+                                        double, Tcoarsen,
                                         std::string, maxTau,
                                         int, bc); 
     };
@@ -112,4 +112,3 @@ namespace XmlInputs
     };
 
 }
-

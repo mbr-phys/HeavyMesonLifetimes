@@ -1,6 +1,8 @@
 #include <Hadrons/Application.hpp>
 #include <Hadrons/Modules.hpp>
 
+#include <cmath>
+
 #include "Inputs.hpp"
 #include "Functions.hpp"
 
@@ -191,9 +193,7 @@ int main(int argc, char *argv[])
 
     std::vector<std::string> qs = hqs; 
     qs.insert(qs.end(), sqs.begin(), sqs.end());
-    if (xmlPar.mesonPar.light == 1) {
-        qs.insert(qs.end(), lqs.begin(), lqs.end());
-    }
+    qs.insert(qs.end(), lqs.begin(), lqs.end());
 
     // gradient flow
     MGradientFlow::WilsonFlow::Par gfPar;
@@ -259,7 +259,7 @@ int main(int argc, char *argv[])
     // add gauge observables important along gradient flow
     application.createModule<MGradientFlow::WilsonFlow>(WFF+"0.00",gfPar);
     step0.push_back(WFF+"0.00");
-    application.createModule<MGradientFlow::WilsonFlow>(WFF+"0.00_stout",gfPar);
+    application.createModule<MGradientFlow::WilsonFlow>(WFF+"0.00_stout",gfPar2);
     step0.push_back(WFF+"0.00_stout");
 
     // make a single group for all contractions at one flow time
@@ -269,12 +269,19 @@ int main(int argc, char *argv[])
     // Contract for each flow time step /////
     /////////////////////////////////////////
     // ********************* NO STOUT *************************
+    const int base_meas_interval = (xmlPar.flowPar.meas_interval > 0) ? xmlPar.flowPar.meas_interval : 1;
+    const int coarse_meas_interval = 4 * base_meas_interval;
+    int coarsen_step = 1;
+    if (xmlPar.flowPar.step_size > 0.0) {
+        coarsen_step = static_cast<int>(std::ceil(xmlPar.flowPar.Tcoarsen / xmlPar.flowPar.step_size - 1e-12));
+        if (coarsen_step < 1) coarsen_step = 1;
+    }
+
+    int last_contraction_step = 0;
     std::vector<std::string> outNames = {};
     for (int t = 1; t <= xmlPar.flowPar.steps; t++) {
         double ti = xmlPar.flowPar.step_size * t;
-        //
-        // after Tcoarsen, extend the measurement interval in the flow time
-        if (ti == xmlPar.flowPar.Tcoarsen) xmlPar.flowPar.meas_interval *= 4;
+        int meas_interval = (t >= coarsen_step) ? coarse_meas_interval : base_meas_interval;
 
         // pass evolved propagators to the next step in the gradient flow
         //std::vector<std::string> qis = {};
@@ -302,7 +309,8 @@ int main(int argc, char *argv[])
 
         // only perform contractions for set intervals along the evolution
         // always perform contractions at final flow time
-        if ((t % xmlPar.flowPar.meas_interval == 0) || (t == xmlPar.flowPar.steps)) {
+        if ((t - last_contraction_step >= meas_interval) || (t == xmlPar.flowPar.steps)) {
+            last_contraction_step = t;
             // add gauge observables important along gradient flow
             application.createModule<MGradientFlow::WilsonFermionFlow>(WF1,wfPar);
             
@@ -342,11 +350,10 @@ int main(int argc, char *argv[])
     }
 
     // ********************* STOUT *************************
+    last_contraction_step = 0;
     for (int t = 1; t <= xmlPar.flowPar.steps; t++) {
         double ti = xmlPar.flowPar.step_size * t;
-        //
-        // after Tcoarsen, extend the measurement interval in the flow time
-        if (ti == xmlPar.flowPar.Tcoarsen) xmlPar.flowPar.meas_interval *= 4;
+        int meas_interval = (t >= coarsen_step) ? coarse_meas_interval : base_meas_interval;
 
         // pass evolved propagators to the next step in the gradient flow
         //std::vector<std::string> qis = {};
@@ -374,7 +381,8 @@ int main(int argc, char *argv[])
 
         // only perform contractions for set intervals along the evolution
         // always perform contractions at final flow time
-        if ((t % xmlPar.flowPar.meas_interval == 0) || (t == xmlPar.flowPar.steps)) {
+        if ((t - last_contraction_step >= meas_interval) || (t == xmlPar.flowPar.steps)) {
+            last_contraction_step = t;
             // add gauge observables important along gradient flow
             application.createModule<MGradientFlow::WilsonFermionFlow>(WF1,wfPar2);
             
