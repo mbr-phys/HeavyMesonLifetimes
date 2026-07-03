@@ -202,11 +202,11 @@ int main(int argc, char *argv[])
     gfPar.step_size = xmlPar.flowPar.step_size;
     gfPar.meas_interval = 1; 
 
-    MGradientFlow::WilsonFlow::Par gfPar2;
-    gfPar2.gauge = "Vgauge";
-    gfPar2.steps = 0; 
-    gfPar2.step_size = xmlPar.flowPar.step_size;
-    gfPar2.meas_interval = 1; 
+    //MGradientFlow::WilsonFlow::Par gfPar2;
+    //gfPar2.gauge = "Vgauge";
+    //gfPar2.steps = 0; 
+    //gfPar2.step_size = xmlPar.flowPar.step_size;
+    //gfPar2.meas_interval = 1; 
 
     MGradientFlow::WilsonFermionFlow::Par wfPar;
     wfPar.gauge = "trans_gauge";
@@ -219,13 +219,15 @@ int main(int argc, char *argv[])
 //    wfPar.maxTau = xmlPar.flowPar.maxTau; // only needed for adaptive flow -> not implemented for fermion flow
 
     MGradientFlow::WilsonFermionFlow::Par wfPar2;
-    wfPar2.gauge = "Vgauge";
+    wfPar2.gauge = "trans_gauge";
 //    wfPar2.output = xmlPar.flowPar.output; // keep empty unless you want a separate file
     wfPar2.steps = 1; 
     wfPar2.step_size = xmlPar.flowPar.step_size;
     wfPar2.meas_interval = xmlPar.flowPar.meas_interval;
     wfPar2.props = qs;
     wfPar2.bc = xmlPar.flowPar.bc;
+    wfPar2.stoutSteps = std::to_string(xmlPar.stoutPar.steps);
+    wfPar2.stoutRho = std::to_string(xmlPar.stoutPar.rho);
 //    wfPar2.maxTau = xmlPar.flowPar.maxTau; // only needed for adaptive flow -> not implemented for fermion flow
 
     std::string snk_mom = "0 0 0"; // only ever zero momentum
@@ -259,7 +261,7 @@ int main(int argc, char *argv[])
     // add gauge observables important along gradient flow
     application.createModule<MGradientFlow::WilsonFlow>(WFF+"0.00",gfPar);
     step0.push_back(WFF+"0.00");
-    application.createModule<MGradientFlow::WilsonFlow>(WFF+"0.00_stout",gfPar2);
+    application.createModule<MGradientFlow::WilsonFlow>(WFF+"0.00_stout",gfPar);
     step0.push_back(WFF+"0.00_stout");
 
     // make a single group for all contractions at one flow time
