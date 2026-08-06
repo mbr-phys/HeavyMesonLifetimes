@@ -61,6 +61,7 @@ namespace XmlInputs
                                         unsigned int, maxiter,
                                         unsigned int, maxiterOut,
                                         unsigned int, maxiterIn,
+                                        unsigned int, mixed,
                                         std::string, prop);
     };
 
@@ -99,6 +100,7 @@ namespace XmlInputs
                                         int, meas_interval,
                                         double, Tcoarsen,
                                         std::string, maxTau,
+                                        unsigned int, stout,
                                         int, bc); 
     };
 

@@ -91,11 +91,23 @@ int main(int argc, char *argv[])
 
     // stout smear
     MGauge::StoutSmearing::Par stPar;
-    stPar.gauge = "trans_gauge";
+    stPar.gauge = "gauge";
     stPar.steps = xmlPar.stoutPar.steps;
     stPar.orthogDim = xmlPar.stoutPar.orthog;
     stPar.rho = xmlPar.stoutPar.rho;
-    application.createModule<MGauge::StoutSmearing>("Vgauge",stPar);
+    application.createModule<MGauge::StoutSmearing>("Vgauge_orig",stPar);
+
+    // translat Vgauge field
+    tPar.q = "Vgauge_orig";
+    tPar.shift = xmlPar.configPar.source_loc;
+    application.createModule<MUtilities::CShiftGaugeField>("Vgauge",tPar);
+
+    // single prec cast
+    if (xmlPar.mdwfParh.mixed || xmlPar.mdwfPars.mixed || xmlPar.mdwfParl.mixed) {
+        MUtilities::GaugeSinglePrecisionCast::Par fPar;
+        fPar.field = "Vgauge";
+        application.createModule<MUtilities::GaugeSinglePrecisionCast>("VgaugeF",fPar);
+    }
 
     std::string gamma_pairs = "";
     if (xmlPar.mesonPar.gamma_snk == "") {
@@ -135,14 +147,24 @@ int main(int argc, char *argv[])
         int j = 0;
         if (k > 0) j = 1;
         // heavy quark
-        std::string name_hq1 = make_moebiusdwfpropagator(application, xmlPar.mdwfParh, srcs[k], j, boundary, twist, "Vgauge", "_"+sources[k]);
+        std ::string gsrc, name_hq1;
+        if (xmlPar.smearPar.smear == 1) {
+            gsrc = make_SmrSrc(application, xmlPar.smearPar, srcs[k], "trans_gauge", "_"+sources[k]);
+            name_hq1 = make_moebiusdwfpropagator(application, xmlPar.mdwfParh, gsrc, j, boundary, twist, "Vgauge", "VgaugeF", "_"+sources[k]);
+        } else {
+            name_hq1 = make_moebiusdwfpropagator(application, xmlPar.mdwfParh, srcs[k], j, boundary, twist, "Vgauge", "VgaugeF", "_"+sources[k]);
+        }
         hqs.push_back(name_hq1);
 
         MContraction::WardIdentity::Par WPar;
         WPar.prop = name_hq1+"_5d";
         WPar.action = "MDWF_action_" + xmlPar.mdwfParh.quark + "_"+sources[0];
         WPar.mass = xmlPar.mdwfParh.mass;
-        WPar.source = srcs[k];
+        if (xmlPar.smearPar.smear == 1) {
+            WPar.source = gsrc;
+        } else {
+            WPar.source = srcs[k];
+        }
         application.createModule<MContraction::WardIdentity>("WardId_"+xmlPar.mdwfParh.quark+sources[k],WPar);
         step0.push_back("WardId_"+xmlPar.mdwfParh.quark+sources[k]);
 
@@ -152,7 +174,7 @@ int main(int argc, char *argv[])
         //    gsrc = make_SmrSrc(application, xmlPar.smearPar, srcs[k], "trans_gauge", "_"+sources[k]);
         //    name_sq1 = make_mixeddwfpropagator(application, xmlPar.dwfPars, gsrc, j, boundary, twist, "trans_gauge", "trans_gaugeF", "_"+sources[k]);
         //} else {
-        std::string name_sq1 = make_moebiusdwfpropagator(application, xmlPar.mdwfPars, srcs[k], j, boundary, twist, "Vgauge", "_"+sources[k]);
+        std::string name_sq1 = make_moebiusdwfpropagator(application, xmlPar.mdwfPars, srcs[k], j, boundary, twist, "Vgauge", "VgaugeF", "_"+sources[k]);
         //}
         sqs.push_back(name_sq1);
 
@@ -173,7 +195,7 @@ int main(int argc, char *argv[])
             //if (xmlPar.smearPar.smear == 1) {
             //    name_lq1 = make_mixeddwfpropagator(application, xmlPar.mdwfParl, gsrc, j, boundary, twist, "trans_gauge", "trans_gaugeF", "_"+sources[k]);
             //} else {
-        std::string name_lq1 = make_moebiusdwfpropagator(application, xmlPar.mdwfParl, srcs[k], j, boundary, twist, "Vgauge", "_"+sources[k]);
+        std::string name_lq1 = make_moebiusdwfpropagator(application, xmlPar.mdwfParl, srcs[k], j, boundary, twist, "Vgauge", "VgaugeF", "_"+sources[k]);
         //}
         lqs.push_back(name_lq1);
 
@@ -209,26 +231,28 @@ int main(int argc, char *argv[])
     //gfPar2.meas_interval = 1; 
 
     MGradientFlow::WilsonFermionFlow::Par wfPar;
-    wfPar.gauge = "trans_gauge";
-//    wfPar.output = xmlPar.flowPar.output; // keep empty unless you want a separate file
-    wfPar.steps = 1; 
-    wfPar.step_size = xmlPar.flowPar.step_size;
-    wfPar.meas_interval = xmlPar.flowPar.meas_interval;
-    wfPar.props = qs;
-    wfPar.bc = xmlPar.flowPar.bc;
-//    wfPar.maxTau = xmlPar.flowPar.maxTau; // only needed for adaptive flow -> not implemented for fermion flow
+    if (xmlPar.flowPar.stout != 1) 
+    {
+        wfPar.gauge = "trans_gauge";
+        wfPar.steps = 1; 
+        wfPar.step_size = xmlPar.flowPar.step_size;
+        wfPar.meas_interval = xmlPar.flowPar.meas_interval;
+        wfPar.props = qs;
+        wfPar.bc = xmlPar.flowPar.bc;
+    }
 
     MGradientFlow::WilsonFermionFlow::Par wfPar2;
-    wfPar2.gauge = "trans_gauge";
-//    wfPar2.output = xmlPar.flowPar.output; // keep empty unless you want a separate file
-    wfPar2.steps = 1; 
-    wfPar2.step_size = xmlPar.flowPar.step_size;
-    wfPar2.meas_interval = xmlPar.flowPar.meas_interval;
-    wfPar2.props = qs;
-    wfPar2.bc = xmlPar.flowPar.bc;
-    wfPar2.stoutSteps = std::to_string(xmlPar.stoutPar.steps);
-    wfPar2.stoutRho = std::to_string(xmlPar.stoutPar.rho);
-//    wfPar2.maxTau = xmlPar.flowPar.maxTau; // only needed for adaptive flow -> not implemented for fermion flow
+    if (xmlPar.flowPar.stout != 0)
+    {
+        wfPar2.gauge = "trans_gauge";
+        wfPar2.steps = 1; 
+        wfPar2.step_size = xmlPar.flowPar.step_size;
+        wfPar2.meas_interval = xmlPar.flowPar.meas_interval;
+        wfPar2.props = qs;
+        wfPar2.bc = xmlPar.flowPar.bc;
+        wfPar2.stoutSteps = std::to_string(xmlPar.stoutPar.steps);
+        wfPar2.stoutRho = std::to_string(xmlPar.stoutPar.rho);
+    }
 
     std::string snk_mom = "0 0 0"; // only ever zero momentum
 
@@ -259,10 +283,16 @@ int main(int argc, char *argv[])
     }
 
     // add gauge observables important along gradient flow
-    application.createModule<MGradientFlow::WilsonFlow>(WFF+"0.00",gfPar);
-    step0.push_back(WFF+"0.00");
-    application.createModule<MGradientFlow::WilsonFlow>(WFF+"0.00_stout",gfPar);
-    step0.push_back(WFF+"0.00_stout");
+    if (xmlPar.flowPar.stout != 1)
+    {
+        application.createModule<MGradientFlow::WilsonFlow>(WFF+"0.00",gfPar);
+        step0.push_back(WFF+"0.00");
+    }
+    if (xmlPar.flowPar.stout != 0)
+    {
+        application.createModule<MGradientFlow::WilsonFlow>(WFF+"0.00_stout",gfPar);
+        step0.push_back(WFF+"0.00_stout");
+    }
 
     // make a single group for all contractions at one flow time
     std::vector<std::string> corrgroups = {make_corrgroup(application, flowMod+"0.00",step0)};
@@ -270,7 +300,6 @@ int main(int argc, char *argv[])
     /////////////////////////////////////////
     // Contract for each flow time step /////
     /////////////////////////////////////////
-    // ********************* NO STOUT *************************
     const int base_meas_interval = (xmlPar.flowPar.meas_interval > 0) ? xmlPar.flowPar.meas_interval : 1;
     const int coarse_meas_interval = 4 * base_meas_interval;
     int coarsen_step = 1;
@@ -278,149 +307,156 @@ int main(int argc, char *argv[])
         coarsen_step = static_cast<int>(std::ceil(xmlPar.flowPar.Tcoarsen / xmlPar.flowPar.step_size - 1e-12));
         if (coarsen_step < 1) coarsen_step = 1;
     }
-
     int last_contraction_step = 0;
     std::vector<std::string> outNames = {};
-    for (int t = 1; t <= xmlPar.flowPar.steps; t++) {
-        double ti = xmlPar.flowPar.step_size * t;
-        int meas_interval = (t >= coarsen_step) ? coarse_meas_interval : base_meas_interval;
 
-        // pass evolved propagators to the next step in the gradient flow
-        //std::vector<std::string> qis = {};
-        if (t != 1) {
-            wfPar.gauge = WFF + "_U";
-            //for (int q = 0; q < qs.size(); q++) {
-            //    std::stringstream ps; ps << q;
-            //    qis.push_back(WFF+"_q"+ps.str()+"_1");
-            //}
-            wfPar.props = outNames;
-        }
+    // ********************* NO STOUT *************************
+    if (xmlPar.flowPar.stout != 1)
+    {
+        for (int t = 1; t <= xmlPar.flowPar.steps; t++) {
+            double ti = xmlPar.flowPar.step_size * t;
+            int meas_interval = (t >= coarsen_step) ? coarse_meas_interval : base_meas_interval;
 
-        std::stringstream st; st << std::fixed << std::setprecision(2) << ti;
-        fM1 = "FlowTime_t" + st.str(); WF1 = "WilsonFlow_t" + st.str(); 
-        std::vector<std::string> stepi = {};
-
-        std::string time = "_t" + st.str();
-
-        outNames.clear();
-        for (int q = 0; q < qs.size(); q++) {
-            std::stringstream ps; ps << q;
-            outNames.push_back("q"+ps.str()+time);
-        }
-        wfPar.outProps = outNames;
-
-        // only perform contractions for set intervals along the evolution
-        // always perform contractions at final flow time
-        if ((t - last_contraction_step >= meas_interval) || (t == xmlPar.flowPar.steps)) {
-            last_contraction_step = t;
-            // add gauge observables important along gradient flow
-            application.createModule<MGradientFlow::WilsonFermionFlow>(WF1,wfPar);
-            
-            // loop over quark sources
-            int split = 3; //(xmlPar.mesonPar.light == 1) ? (3) : (2);
-            for (int y = 0; y < outNames.size()/split; y++) {
-                int z = y + outNames.size()/split;
-                std::string flow_hq1 = outNames[y];
-                std::string flow_sq1 = outNames[z];
-                std::string tm = sources[y];
-
-                // 2pt contractions
-                stepi.push_back(make_contraction(application, "sh_t"+tm+"_"+st.str(), flow_sq1, flow_hq1, gamma_pairs, snk_str, "", true, false));
-                stepi.push_back(make_contraction(application, "ss_t"+tm+"_"+st.str(), flow_sq1, flow_sq1, gamma_pairs, snk_str, "", true, false));
-                stepi.push_back(make_contraction(application, "hh_t"+tm+"_"+st.str(), flow_hq1, flow_hq1, gamma_pairs, snk_str, "", true, false));
-
-                int zl = z + outNames.size()/split;
-                std::string flow_lq1 = outNames[zl];
-                stepi.push_back(make_contraction(application, "lh_t"+tm+"_"+st.str(), flow_lq1, flow_hq1, gamma_pairs, snk_str, "", true, false));
-                stepi.push_back(make_contraction(application, "ls_t"+tm+"_"+st.str(), flow_lq1, flow_sq1, gamma_pairs, snk_str, "", true, false));
-                stepi.push_back(make_contraction(application, "ll_t"+tm+"_"+st.str(), flow_lq1, flow_lq1, gamma_pairs, snk_str, "", true, false));
-
+            // pass evolved propagators to the next step in the gradient flow
+            //std::vector<std::string> qis = {};
+            if (t != 1) {
+                wfPar.gauge = WFF + "_U";
+                //for (int q = 0; q < qs.size(); q++) {
+                //    std::stringstream ps; ps << q;
+                //    qis.push_back(WFF+"_q"+ps.str()+"_1");
+                //}
+                wfPar.props = outNames;
             }
-            stepi.push_back(WF1);
-            
-            // make a single group for all contractions at one flow time
-            corrgroups.push_back(make_corrgroup(application, fM1, stepi));
-        } else {
-            // add gauge observables important along gradient flow
-            application.createModule<MGradientFlow::WilsonFermionFlow>(WF1,wfPar);
-            stepi.push_back(WF1);
-            
-            // make a single group for all contractions at one flow time
-            corrgroups.push_back(make_corrgroup(application, fM1, stepi));
+
+            std::stringstream st; st << std::fixed << std::setprecision(2) << ti;
+            fM1 = "FlowTime_t" + st.str(); WF1 = "WilsonFlow_t" + st.str(); 
+            std::vector<std::string> stepi = {};
+
+            std::string time = "_t" + st.str();
+
+            outNames.clear();
+            for (int q = 0; q < qs.size(); q++) {
+                std::stringstream ps; ps << q;
+                outNames.push_back("q"+ps.str()+time);
+            }
+            wfPar.outProps = outNames;
+
+            // only perform contractions for set intervals along the evolution
+            // always perform contractions at final flow time
+            if ((t - last_contraction_step >= meas_interval) || (t == xmlPar.flowPar.steps)) {
+                last_contraction_step = t;
+                // add gauge observables important along gradient flow
+                application.createModule<MGradientFlow::WilsonFermionFlow>(WF1,wfPar);
+                
+                // loop over quark sources
+                int split = 3; //(xmlPar.mesonPar.light == 1) ? (3) : (2);
+                for (int y = 0; y < outNames.size()/split; y++) {
+                    int z = y + outNames.size()/split;
+                    std::string flow_hq1 = outNames[y];
+                    std::string flow_sq1 = outNames[z];
+                    std::string tm = sources[y];
+
+                    // 2pt contractions
+                    stepi.push_back(make_contraction(application, "sh_t"+tm+"_"+st.str(), flow_sq1, flow_hq1, gamma_pairs, snk_str, "", true, false));
+                    stepi.push_back(make_contraction(application, "ss_t"+tm+"_"+st.str(), flow_sq1, flow_sq1, gamma_pairs, snk_str, "", true, false));
+                    stepi.push_back(make_contraction(application, "hh_t"+tm+"_"+st.str(), flow_hq1, flow_hq1, gamma_pairs, snk_str, "", true, false));
+
+                    int zl = z + outNames.size()/split;
+                    std::string flow_lq1 = outNames[zl];
+                    stepi.push_back(make_contraction(application, "lh_t"+tm+"_"+st.str(), flow_lq1, flow_hq1, gamma_pairs, snk_str, "", true, false));
+                    stepi.push_back(make_contraction(application, "ls_t"+tm+"_"+st.str(), flow_lq1, flow_sq1, gamma_pairs, snk_str, "", true, false));
+                    stepi.push_back(make_contraction(application, "ll_t"+tm+"_"+st.str(), flow_lq1, flow_lq1, gamma_pairs, snk_str, "", true, false));
+
+                }
+                stepi.push_back(WF1);
+                
+                // make a single group for all contractions at one flow time
+                corrgroups.push_back(make_corrgroup(application, fM1, stepi));
+            } else {
+                // add gauge observables important along gradient flow
+                application.createModule<MGradientFlow::WilsonFermionFlow>(WF1,wfPar);
+                stepi.push_back(WF1);
+                
+                // make a single group for all contractions at one flow time
+                corrgroups.push_back(make_corrgroup(application, fM1, stepi));
+            }
+            flowMod = fM1; WFF = WF1;
         }
-        flowMod = fM1; WFF = WF1;
     }
 
     // ********************* STOUT *************************
-    last_contraction_step = 0;
-    for (int t = 1; t <= xmlPar.flowPar.steps; t++) {
-        double ti = xmlPar.flowPar.step_size * t;
-        int meas_interval = (t >= coarsen_step) ? coarse_meas_interval : base_meas_interval;
+    if (xmlPar.flowPar.stout != 0)
+    {
+        last_contraction_step = 0;
+        for (int t = 1; t <= xmlPar.flowPar.steps; t++) {
+            double ti = xmlPar.flowPar.step_size * t;
+            int meas_interval = (t >= coarsen_step) ? coarse_meas_interval : base_meas_interval;
 
-        // pass evolved propagators to the next step in the gradient flow
-        //std::vector<std::string> qis = {};
-        if (t != 1) {
-            wfPar2.gauge = WFF + "_U";
-            //for (int q = 0; q < qs.size(); q++) {
-            //    std::stringstream ps; ps << q;
-            //    qis.push_back(WFF+"_q"+ps.str()+"_1");
-            //}
-            wfPar2.props = outNames;
-        }
-
-        std::stringstream st; st << std::fixed << std::setprecision(2) << ti;
-        fM1 = "FlowTime_t" + st.str() + "_stout"; WF1 = "WilsonFlow_t" + st.str() + "_stout"; 
-        std::vector<std::string> stepi = {};
-
-        std::string time = "_t" + st.str();
-
-        outNames.clear();
-        for (int q = 0; q < qs.size(); q++) {
-            std::stringstream ps; ps << q;
-            outNames.push_back("q"+ps.str()+"_stout"+time);
-        }
-        wfPar2.outProps = outNames;
-
-        // only perform contractions for set intervals along the evolution
-        // always perform contractions at final flow time
-        if ((t - last_contraction_step >= meas_interval) || (t == xmlPar.flowPar.steps)) {
-            last_contraction_step = t;
-            // add gauge observables important along gradient flow
-            application.createModule<MGradientFlow::WilsonFermionFlow>(WF1,wfPar2);
-            
-            // loop over quark sources
-            int split = 3; //(xmlPar.mesonPar.light == 1) ? (3) : (2);
-            for (int y = 0; y < outNames.size()/split; y++) {
-                int z = y + outNames.size()/split;
-                std::string flow_hq1 = outNames[y];
-                std::string flow_sq1 = outNames[z];
-                std::string tm = sources[y];
-
-                // 2pt contractions
-                stepi.push_back(make_contraction(application, "sh_t"+tm+"_stout_"+st.str(), flow_sq1, flow_hq1, gamma_pairs, snk_str, "", true, false));
-                stepi.push_back(make_contraction(application, "ss_t"+tm+"_stout_"+st.str(), flow_sq1, flow_sq1, gamma_pairs, snk_str, "", true, false));
-                stepi.push_back(make_contraction(application, "hh_t"+tm+"_stout_"+st.str(), flow_hq1, flow_hq1, gamma_pairs, snk_str, "", true, false));
-
-                int zl = z + outNames.size()/split;
-                std::string flow_lq1 = outNames[zl];
-                stepi.push_back(make_contraction(application, "lh_t"+tm+"_stout_"+st.str(), flow_lq1, flow_hq1, gamma_pairs, snk_str, "", true, false));
-                stepi.push_back(make_contraction(application, "ls_t"+tm+"_stout_"+st.str(), flow_lq1, flow_sq1, gamma_pairs, snk_str, "", true, false));
-                stepi.push_back(make_contraction(application, "ll_t"+tm+"_stout_"+st.str(), flow_lq1, flow_lq1, gamma_pairs, snk_str, "", true, false));
-
+            // pass evolved propagators to the next step in the gradient flow
+            //std::vector<std::string> qis = {};
+            if (t != 1) {
+                wfPar2.gauge = WFF + "_U";
+                //for (int q = 0; q < qs.size(); q++) {
+                //    std::stringstream ps; ps << q;
+                //    qis.push_back(WFF+"_q"+ps.str()+"_1");
+                //}
+                wfPar2.props = outNames;
             }
-            stepi.push_back(WF1);
-            
-            // make a single group for all contractions at one flow time
-            corrgroups.push_back(make_corrgroup(application, fM1, stepi));
-        } else {
-            // add gauge observables important along gradient flow
-            application.createModule<MGradientFlow::WilsonFermionFlow>(WF1,wfPar2);
-            stepi.push_back(WF1);
-            
-            // make a single group for all contractions at one flow time
-            corrgroups.push_back(make_corrgroup(application, fM1, stepi));
+
+            std::stringstream st; st << std::fixed << std::setprecision(2) << ti;
+            fM1 = "FlowTime_t" + st.str() + "_stout"; WF1 = "WilsonFlow_t" + st.str() + "_stout"; 
+            std::vector<std::string> stepi = {};
+
+            std::string time = "_t" + st.str();
+
+            outNames.clear();
+            for (int q = 0; q < qs.size(); q++) {
+                std::stringstream ps; ps << q;
+                outNames.push_back("q"+ps.str()+"_stout"+time);
+            }
+            wfPar2.outProps = outNames;
+
+            // only perform contractions for set intervals along the evolution
+            // always perform contractions at final flow time
+            if ((t - last_contraction_step >= meas_interval) || (t == xmlPar.flowPar.steps)) {
+                last_contraction_step = t;
+                // add gauge observables important along gradient flow
+                application.createModule<MGradientFlow::WilsonFermionFlow>(WF1,wfPar2);
+                
+                // loop over quark sources
+                int split = 3; //(xmlPar.mesonPar.light == 1) ? (3) : (2);
+                for (int y = 0; y < outNames.size()/split; y++) {
+                    int z = y + outNames.size()/split;
+                    std::string flow_hq1 = outNames[y];
+                    std::string flow_sq1 = outNames[z];
+                    std::string tm = sources[y];
+
+                    // 2pt contractions
+                    stepi.push_back(make_contraction(application, "sh_t"+tm+"_stout_"+st.str(), flow_sq1, flow_hq1, gamma_pairs, snk_str, "", true, false));
+                    stepi.push_back(make_contraction(application, "ss_t"+tm+"_stout_"+st.str(), flow_sq1, flow_sq1, gamma_pairs, snk_str, "", true, false));
+                    stepi.push_back(make_contraction(application, "hh_t"+tm+"_stout_"+st.str(), flow_hq1, flow_hq1, gamma_pairs, snk_str, "", true, false));
+
+                    int zl = z + outNames.size()/split;
+                    std::string flow_lq1 = outNames[zl];
+                    stepi.push_back(make_contraction(application, "lh_t"+tm+"_stout_"+st.str(), flow_lq1, flow_hq1, gamma_pairs, snk_str, "", true, false));
+                    stepi.push_back(make_contraction(application, "ls_t"+tm+"_stout_"+st.str(), flow_lq1, flow_sq1, gamma_pairs, snk_str, "", true, false));
+                    stepi.push_back(make_contraction(application, "ll_t"+tm+"_stout_"+st.str(), flow_lq1, flow_lq1, gamma_pairs, snk_str, "", true, false));
+
+                }
+                stepi.push_back(WF1);
+                
+                // make a single group for all contractions at one flow time
+                corrgroups.push_back(make_corrgroup(application, fM1, stepi));
+            } else {
+                // add gauge observables important along gradient flow
+                application.createModule<MGradientFlow::WilsonFermionFlow>(WF1,wfPar2);
+                stepi.push_back(WF1);
+                
+                // make a single group for all contractions at one flow time
+                corrgroups.push_back(make_corrgroup(application, fM1, stepi));
+            }
+            flowMod = fM1; WFF = WF1;
         }
-        flowMod = fM1; WFF = WF1;
     }
 
     // pass all groups of contractions to a single output file
@@ -430,7 +466,7 @@ int main(int argc, char *argv[])
     application.createModule<MIO::WriteResultGroup>("WriteToFile",WCPar);
 
     // execution
-    application.saveParameterFile("StoutFlow.xml");
+    application.saveParameterFile(xmlPar.mesonPar.file_name+".xml");
     application.run();
     
     // epilogue
