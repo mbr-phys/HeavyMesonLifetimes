@@ -71,12 +71,7 @@ namespace XmlInputs
         GRID_SERIALIZABLE_CLASS_MEMBERS(MesonPar,
                                         std::string, file_name,
                                         std::string, gamma_src,
-                                        std::string, gamma_snk,
-                                        unsigned int, light,
-                                        unsigned int, n2_min,
-                                        unsigned int, n2_max,
-                                        unsigned int, ss,
-                                        std::string, moms);
+                                        std::string, gamma_snk);
     };
 
     class SmearPar : Serializable

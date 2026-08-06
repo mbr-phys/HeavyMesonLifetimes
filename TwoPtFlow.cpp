@@ -17,7 +17,7 @@ struct XmlPar
 {
     XmlInputs::RunPar      runPar;
     XmlInputs::ConfigPar   configPar;
-    XmlInputs::MdwfPar     mdwfPar1;
+    XmlInputs::MdwfPar     mdwfPar;
     XmlInputs::MesonPar    mesonPar;
     XmlInputs::FlowPar     flowPar;
     XmlInputs::StoutPar    stoutPar;
@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 
     read(reader, "runPar",      xmlPar.runPar);
     read(reader, "configPar",   xmlPar.configPar);
-    read(reader, "dwfPars",     xmlPar.mdwfPars);
+    read(reader, "mdwfPar",     xmlPar.mdwfPar);
     read(reader, "mesonPar",    xmlPar.mesonPar);
     read(reader, "flowPar",     xmlPar.flowPar);
     read(reader, "stoutPar",    xmlPar.stoutPar);
@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
     application.createModule<MUtilities::CShiftGaugeField>("Vgauge",tPar);
 
     // single prec cast
-    if (xmlPar.mdwfPars.mixed) {
+    if (xmlPar.mdwfPar.mixed) {
         MUtilities::GaugeSinglePrecisionCast::Par fPar;
         fPar.field = "Vgauge";
         application.createModule<MUtilities::GaugeSinglePrecisionCast>("VgaugeF",fPar);
@@ -142,28 +142,28 @@ int main(int argc, char *argv[])
         int j = 0;
         if (k > 0) j = 1;
 
-        for (qdx = 0; qdx < xmlPar.mdwfPars.masses.size(); qdx++) {
+        for (int qdx = 0; qdx < xmlPar.mdwfPar.mass.size(); qdx++) {
             std ::string gsrc, name_q1;
 
             if (xmlPar.smearPar.smear == 1) {
                 gsrc = make_SmrSrc(application, xmlPar.smearPar, srcs[k], "trans_gauge", "_"+sources[k]);
-                name_q1 = make_moebiusdwfpropagator(application, xmlPar.mdwfPars, qdx, gsrc, j, boundary, twist, "Vgauge", "VgaugeF", "_"+sources[k]);
+                name_q1 = make_moebiusdwfpropagator(application, xmlPar.mdwfPar, qdx, gsrc, j, boundary, twist, "Vgauge", "VgaugeF", "_"+sources[k]);
             } else {
-                name_q1 = make_moebiusdwfpropagator(application, xmlPar.mdwfPars, qdx, srcs[k], j, boundary, twist, "Vgauge", "VgaugeF", "_"+sources[k]);
+                name_q1 = make_moebiusdwfpropagator(application, xmlPar.mdwfPar, qdx, srcs[k], j, boundary, twist, "Vgauge", "VgaugeF", "_"+sources[k]);
             }
             qs.push_back(name_q1);
 
             MContraction::WardIdentity::Par WPar;
             WPar.prop = name_q1+"_5d";
-            WPar.action = "MDWF_action_" + xmlPar.mdwfPar1.quark[qdx] + "_"+sources[0];
-            WPar.mass = xmlPar.mdwfPar1.mass[qdx];
+            WPar.action = "MDWF_action_" + xmlPar.mdwfPar.quark[qdx] + "_"+sources[0];
+            WPar.mass = xmlPar.mdwfPar.mass[qdx];
             if (xmlPar.smearPar.smear == 1) {
                 WPar.source = gsrc;
             } else {
                 WPar.source = srcs[k];
             }
-            application.createModule<MContraction::WardIdentity>("WardId_"+xmlPar.mdwfPar1.quark[qdx]+sources[k],WPar);
-            step0.push_back("WardId_"+xmlPar.mdwfPar1.quark[qdx]+sources[k]);
+            application.createModule<MContraction::WardIdentity>("WardId_"+xmlPar.mdwfPar.quark[qdx]+sources[k],WPar);
+            step0.push_back("WardId_"+xmlPar.mdwfPar.quark[qdx]+"_t"+sources[k]);
         }
     }
 
@@ -183,8 +183,8 @@ int main(int argc, char *argv[])
         wfPar.bc = xmlPar.flowPar.bc;
     if (xmlPar.flowPar.stout == 1) 
     {
-        wfPar2.stoutSteps = std::to_string(xmlPar.stoutPar.steps);
-        wfPar2.stoutRho = std::to_string(xmlPar.stoutPar.rho);
+        wfPar.stoutSteps = std::to_string(xmlPar.stoutPar.steps);
+        wfPar.stoutRho = std::to_string(xmlPar.stoutPar.rho);
     }
 
     std::string snk_mom = "0 0 0"; // only ever zero momentum
@@ -201,11 +201,11 @@ int main(int argc, char *argv[])
     std::string fM1(flowMod), WF1(WFF);
     // loop over quark sources
     for (int k = 0; k < srcs.size(); k++) {
-        for (qdx = 0; qdx < xmlPar.mdwfPars.masses.size(); qdx++) {
-            for (rdx = 0; rdx < xmlPar.mdwfPars.masses.size(); rdx++) {
-                std::string q1 = xmlPar.mdwfPars.quark[qdx], q2 = xmlPar.mdwfPars.quark[rdx];
+        for (int qdx = 0; qdx < xmlPar.mdwfPar.mass.size(); qdx++) {
+            for (int rdx = 0; rdx < xmlPar.mdwfPar.mass.size(); rdx++) {
+                std::string q1 = xmlPar.mdwfPar.quark[qdx], q2 = xmlPar.mdwfPar.quark[rdx];
                 std::string name_q1 = q1+"_"+sources[k], name_q2 = q2+"_"+sources[k];
-                step0.push_back(make_contraction(application, q1+q2+"_t"+tm+"_0.00", name_q1, name_q2, gamma_pairs, snk_str, "", true, false));
+                step0.push_back(make_contraction(application, q1+"_"+q2+"_t"+sources[k]+"_0.00", name_q1, name_q2, gamma_pairs, snk_str, "", true, false));
             }
         }
     }
@@ -261,11 +261,11 @@ int main(int argc, char *argv[])
             
             // 2pt contractions
             for (int k = 0; k < srcs.size(); k++) {
-                for (qdx = 0; qdx < xmlPar.mdwfPars.masses.size(); qdx++) {
-                    for (rdx = 0; rdx < xmlPar.mdwfPars.masses.size(); rdx++) {
-                        std::string q1 = xmlPar.mdwfPars.quark[qdx], q2 = xmlPar.mdwfPars.quark[rdx];
+                for (int qdx = 0; qdx < xmlPar.mdwfPar.mass.size(); qdx++) {
+                    for (int rdx = 0; rdx < xmlPar.mdwfPar.mass.size(); rdx++) {
+                        std::string q1 = xmlPar.mdwfPar.quark[qdx], q2 = xmlPar.mdwfPar.quark[rdx];
                         std::string flow_q1 = q1+"_"+sources[k]+time, flow_q2 = q2+"_"+sources[k]+time;
-                        stepi.push_back(make_contraction(application, q1+q2+"_t"+tm+"_"+st.str(), flow_q1, flow_q2, gamma_pairs, snk_str, "", true, false));
+                        stepi.push_back(make_contraction(application, q1+"_"+q2+"_t"+sources[k]+"_"+st.str(), flow_q1, flow_q2, gamma_pairs, snk_str, "", true, false));
                     }
                 }
             }
