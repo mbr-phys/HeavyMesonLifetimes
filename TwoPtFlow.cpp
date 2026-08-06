@@ -191,7 +191,6 @@ int main(int argc, char *argv[])
 
     std::string snk_str = make_PtSnk(application, snk_mom, "");
     int stp = xmlPar.configPar.sources[1] - xmlPar.configPar.sources[0];
-    int Tmax = xmlPar.configPar.Tmax;
 
     //////////////////////////////////////
     //  Contract at zero flow time ///////

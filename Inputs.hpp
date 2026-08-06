@@ -27,9 +27,7 @@ namespace XmlInputs
                                         unsigned int, end,
                                         unsigned int, step,
                                         std::string, source_loc,
-                                        std::vector<int>, sources,
-                                        std::vector<int>, deltaTs,
-                                        unsigned int, Tmax);
+                                        std::vector<int>, sources);
     };
     
     class DwfPar : Serializable
@@ -43,8 +41,7 @@ namespace XmlInputs
                                         double, residual,
                                         unsigned int, maxiter,
                                         unsigned int, maxiterOut,
-                                        unsigned int, maxiterIn,
-                                        std::string, prop);
+                                        unsigned int, maxiterIn);
     };
 
     class MdwfPar : Serializable
@@ -61,8 +58,7 @@ namespace XmlInputs
                                         unsigned int, maxiter,
                                         unsigned int, maxiterOut,
                                         unsigned int, maxiterIn,
-                                        unsigned int, mixed,
-                                        std::string, prop);
+                                        unsigned int, mixed);
     };
 
     class MesonPar : Serializable
