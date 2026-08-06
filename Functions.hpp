@@ -133,33 +133,33 @@ std::string make_mixeddwfpropagator(Application &application, XmlInputs::DwfPar 
     return prop_name;
 }
 
-std::string make_mixedmoebiusdwfpropagator(Application &application, XmlInputs::MdwfPar &dwfPar, std::string src, int i, std::string boundary, std::string twist, std::string gauge, std::string Fgauge, std::string add){
-    std::string solve_name = "MixedCGm_" + dwfPar.quark;
+std::string make_mixedmoebiusdwfpropagator(Application &application, XmlInputs::MdwfPar &dwfPar, int qdx, std::string src, int i, std::string boundary, std::string twist, std::string gauge, std::string Fgauge, std::string add){
+    std::string solve_name = "MixedCGm_" + dwfPar.quark[qdx];
     if (i == 0) {
         MAction::MobiusDWFF::Par FactionPar;
         FactionPar.gauge    = Fgauge;
         FactionPar.Ls       = dwfPar.Ls;
         FactionPar.M5       = dwfPar.M5;
-        FactionPar.mass     = dwfPar.mass;
+        FactionPar.mass     = dwfPar.mass[qdx];
         FactionPar.b        = dwfPar.b;
         FactionPar.c        = dwfPar.c;
         FactionPar.boundary = boundary;
         FactionPar.twist    = twist;
 
-        std::string Fact_name = "MDWFF_action_" + dwfPar.quark + add;
+        std::string Fact_name = "MDWFF_action_" + dwfPar.quark[qdx] + add;
         application.createModule<MAction::MobiusDWFF>(Fact_name, FactionPar);
 
         MAction::MobiusDWF::Par actionPar;
         actionPar.gauge    = gauge;
         actionPar.Ls       = dwfPar.Ls;
         actionPar.M5       = dwfPar.M5;
-        actionPar.mass     = dwfPar.mass;
+        actionPar.mass     = dwfPar.mass[qdx];
         actionPar.b        = dwfPar.b;
         actionPar.c        = dwfPar.c;
         actionPar.boundary = boundary;
         actionPar.twist    = twist;
 
-        std::string act_name = "MDWF_action_" + dwfPar.quark + add;
+        std::string act_name = "MDWF_action_" + dwfPar.quark[qdx] + add;
         application.createModule<MAction::MobiusDWF>(act_name, actionPar);
 
         // solver
@@ -178,28 +178,28 @@ std::string make_mixedmoebiusdwfpropagator(Application &application, XmlInputs::
     quarkPar.solver = solve_name;
     quarkPar.source = src;
 
-    std::string prop_name = dwfPar.quark + add;
+    std::string prop_name = dwfPar.quark[qdx] + add;
     application.createModule<MFermion::GaugeProp>(prop_name, quarkPar);
     return prop_name;
 }
 
-std::string make_moebiusdwfpropagator(Application &application, XmlInputs::MdwfPar &dwfPar, std::string src, int i, std::string boundary, std::string twist, std::string gauge, std::string Fgauge, std::string add){
+std::string make_moebiusdwfpropagator(Application &application, XmlInputs::MdwfPar &dwfPar, int qdx, std::string src, int i, std::string boundary, std::string twist, std::string gauge, std::string Fgauge, std::string add){
     if (dwfPar.mixed == 1) {
-        return make_mixedmoebiusdwfpropagator(application, dwfPar, src, i, boundary, twist, gauge, Fgauge, add);
+        return make_mixedmoebiusdwfpropagator(application, dwfPar, qdx, src, i, boundary, twist, gauge, Fgauge, add);
     }
-    std::string solve_name = "CGm_" + dwfPar.quark;
+    std::string solve_name = "CGm_" + dwfPar.quark[qdx];
     if (i == 0) {
         MAction::MobiusDWF::Par actionPar;
         actionPar.gauge    = gauge;
         actionPar.Ls       = dwfPar.Ls;
         actionPar.M5       = dwfPar.M5;
-        actionPar.mass     = dwfPar.mass;
+        actionPar.mass     = dwfPar.mass[qdx];
         actionPar.b        = dwfPar.b;
         actionPar.c        = dwfPar.c;
         actionPar.boundary = boundary;
         actionPar.twist    = twist;
 
-        std::string act_name = "MDWF_action_" + dwfPar.quark + add;
+        std::string act_name = "MDWF_action_" + dwfPar.quark[qdx] + add;
         application.createModule<MAction::MobiusDWF>(act_name, actionPar);
 
         // solver
@@ -216,7 +216,7 @@ std::string make_moebiusdwfpropagator(Application &application, XmlInputs::MdwfP
     quarkPar.solver = solve_name;
     quarkPar.source = src;
 
-    std::string prop_name = dwfPar.quark + add;
+    std::string prop_name = dwfPar.quark[qdx] + add;
     application.createModule<MFermion::GaugeProp>(prop_name, quarkPar);
     return prop_name;
 }

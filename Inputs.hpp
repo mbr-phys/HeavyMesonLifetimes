@@ -51,8 +51,8 @@ namespace XmlInputs
     {
     public:
         GRID_SERIALIZABLE_CLASS_MEMBERS(MdwfPar,
-                                        std::string, quark,
-                                        double, mass,
+                                        std::vector<std::string>, quark,
+                                        std::vector<double>, mass,
                                         double, M5,
                                         double, b,
                                         double, c,

@@ -4,6 +4,7 @@ FermionFlow_Lifetimes.o
 .depend
 
 core.*
+build*
 /build
 /.buildutils
 /autom4te.cache
