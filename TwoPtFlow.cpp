@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
             } else {
                 WPar.source = srcs[k];
             }
-            application.createModule<MContraction::WardIdentity>("WardId_"+xmlPar.mdwfPar.quark[qdx]+sources[k],WPar);
+            application.createModule<MContraction::WardIdentity>("WardId_"+xmlPar.mdwfPar.quark[qdx]+"_t"+sources[k],WPar);
             step0.push_back("WardId_"+xmlPar.mdwfPar.quark[qdx]+"_t"+sources[k]);
         }
     }
@@ -175,12 +175,12 @@ int main(int argc, char *argv[])
     gfPar.meas_interval = 1; 
 
     MGradientFlow::WilsonFermionFlow::Par wfPar;
-        wfPar.gauge = "trans_gauge";
-        wfPar.steps = 1; 
-        wfPar.step_size = xmlPar.flowPar.step_size;
-        wfPar.meas_interval = xmlPar.flowPar.meas_interval;
-        wfPar.props = qs;
-        wfPar.bc = xmlPar.flowPar.bc;
+    wfPar.gauge = "trans_gauge";
+    wfPar.steps = 1; 
+    wfPar.step_size = xmlPar.flowPar.step_size;
+    wfPar.meas_interval = xmlPar.flowPar.meas_interval;
+    wfPar.props = qs;
+    wfPar.bc = xmlPar.flowPar.bc;
     if (xmlPar.flowPar.stout == 1) 
     {
         wfPar.stoutSteps = std::to_string(xmlPar.stoutPar.steps);
