@@ -82,10 +82,10 @@ int main(int argc, char *argv[])
     application.createModule<MIO::LoadNersc>("gauge",gauge);
 
     // translat gauge field
-    MGauge::Translat::Par tPar;
-    tPar.gauge = "gauge";
-    tPar.xvec = coordVec(xmlPar.configPar.source_loc);
-    application.createModule<MGauge::Translat>("trans_gauge",tPar);
+    MUtilities::CShiftGaugeField::Par tPar;
+    tPar.q = "gauge";
+    tPar.shift = xmlPar.configPar.source_loc;
+    application.createModule<MUtilities::CShiftGaugeField>("trans_gauge",tPar);
 
     // stout smear
     MGauge::StoutSmearing::Par stPar;
