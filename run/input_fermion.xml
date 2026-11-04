@@ -5,6 +5,11 @@
         <appDb>Schedule.db</appDb>
         <restore>false</restore>
         <scheduler>naive</scheduler>
+        <flowChaining>step</flowChaining> <!-- step or interval -->
+        <eyes>0</eyes>                    <!-- 1: dim-6 DeltaB=0 eyes and condensates (stochasticPar) in this run -->
+        <saveWalls>0</saveWalls>          <!-- 1: save the unflowed wall propagators for FermionFlow_Eyes -->
+        <wallStem>walls</wallStem>        <!-- directory of the saved wall propagators -->
+        <wallIo32>1</wallIo32>            <!-- 1: wall propagators on disk in single precision -->
     </runPar>
     <configPar>
         <fileStem>/path/to/ckpoint_lat</fileStem> 
@@ -45,6 +50,17 @@
         <maxiterOut>10</maxiterOut>
         <prop>none</prop>
     </sdwfPar>
+    <ldwfPar> <!-- placeholder values: set the light-quark parameters of the ensemble -->
+        <quark>l</quark>
+        <mass>0.005</mass>
+        <Ls>16</Ls>
+        <M5>1.8</M5>
+        <residual>1.0e-08</residual>
+        <maxiter>10000</maxiter>
+        <maxiterIn>100000</maxiterIn>
+        <maxiterOut>10</maxiterOut>
+        <prop>none</prop>
+    </ldwfPar>
     <mesonPar>
         <file_name>ApplicationTest</file_name>
         <!-- <gamma_src></gamma_src>
@@ -79,4 +95,19 @@
         <iterations>100</iterations>
         <orthog>3</orthog>
     </smearPar>
+    <hqePar>
+        <probeGammas>Gamma5</probeGammas> <!-- Gamma5 and/or GammaTGamma5 -->
+        <vectorGammas>GammaX GammaY GammaZ</vectorGammas> <!-- B* 3pts: none, or a subset of GammaX GammaY GammaZ -->
+        <twoQuark>true</twoQuark>
+        <vertices></vertices>             <!-- empty = all ops (16 gammas + HQE operators) -->
+        <dim7>true</dim7>
+        <gammaPairs></gammaPairs>         <!-- empty = diag (16 G x G) -->
+        <atTau0>true</atTau0>
+    </hqePar>
+    <stochasticPar> <!-- read if runPar.eyes = 1, and by FermionFlow_Eyes -->
+        <nSrcs>1</nSrcs>
+        <nsparse>2</nsparse>              <!-- nSrcs*nsparse^4 noise components, one 12-column solve each per loop flavour -->
+        <c_fl>0.0</c_fl>                  <!-- scalar condensate improvement; 0 for DWF -->
+        <eyeGammaPairs>all</eyeGammaPairs> <!-- WeakEye3pt gamma pairs: diag, all, or "(G1 G2)..."; all for the penguin-type operators -->
+    </stochasticPar>
 </grid>
