@@ -1,0 +1,111 @@
+<?xml version="1.0"?>
+<!-- FermionFlow_Eyes: dim-6 DeltaB=0 eye diagrams and stochastic condensates only, from the wall propagators saved by
+     FermionFlow_Lifetimes (run/input_fermion.xml with runPar.saveWalls = 1).
+     Must match the saving run exactly: runId (seeds the Z2 wall noise used for the spectator sink), configPar, the quark
+     names (wall files are <wallStem>/<quark>_<t>.<traj>.bin), smearPar, flowPar, mesonPar.light and runPar.wallStem/wallIo32.
+     Output: <mesonPar.file_name>_eyes; application database <appDb stem>_eyes.db. stoutPar is not read. -->
+<grid>
+    <runPar>
+        <runId>test</runId>               <!-- same as the saving run -->
+        <appDb>Schedule.db</appDb>        <!-- used as Schedule_eyes.db -->
+        <restore>false</restore>
+        <scheduler>naive</scheduler>
+        <flowChaining>step</flowChaining> <!-- step or interval -->
+        <eyes>1</eyes>                    <!-- not used by FermionFlow_Eyes -->
+        <saveWalls>0</saveWalls>          <!-- not used by FermionFlow_Eyes -->
+        <wallStem>walls</wallStem>        <!-- directory of the saved wall propagators -->
+        <wallIo32>1</wallIo32>            <!-- as when the walls were saved -->
+    </runPar>
+    <configPar>
+        <fileStem>/path/to/ckpoint_lat</fileStem>
+        <begin>280</begin>
+        <end>281</end> <!-- must be gtr than final config to be used -->
+        <step>40</step>
+        <source_loc>0 21 23 19</source_loc>
+        <sources>
+            <elem>0</elem>
+            <elem>32</elem>
+        </sources>
+        <deltaTs>
+            <elem>32</elem>
+        </deltaTs>
+        <Tmax>64</Tmax>
+    </configPar>
+    <hdwfPar> <!-- only the quark name is used (wall file names) -->
+        <quark>b</quark>
+        <mass>0.45</mass>
+        <Ls>12</Ls>
+        <M5>1.0</M5>
+        <b>1.5</b>
+        <c>0.5</c>
+        <residual>1.0e-18</residual>
+        <maxiter>100000</maxiter>
+        <maxiterIn>100000</maxiterIn>
+        <maxiterOut>10</maxiterOut>
+        <prop>none</prop>
+    </hdwfPar>
+    <sdwfPar> <!-- wall file names, and the strange loop solves -->
+        <quark>s</quark>
+        <mass>0.02477</mass>
+        <Ls>16</Ls>
+        <M5>1.8</M5>
+        <residual>1.0e-08</residual>
+        <maxiter>10000</maxiter>
+        <maxiterIn>100000</maxiterIn>
+        <maxiterOut>10</maxiterOut>
+        <prop>none</prop>
+    </sdwfPar>
+    <ldwfPar> <!-- wall file names, and the light loop solves; placeholder values: set the light-quark parameters of the ensemble -->
+        <quark>l</quark>
+        <mass>0.005</mass>
+        <Ls>16</Ls>
+        <M5>1.8</M5>
+        <residual>1.0e-08</residual>
+        <maxiter>10000</maxiter>
+        <maxiterIn>100000</maxiterIn>
+        <maxiterOut>10</maxiterOut>
+        <prop>none</prop>
+    </ldwfPar>
+    <mesonPar> <!-- only file_name and light are used -->
+        <file_name>ApplicationTest</file_name>
+        <gamma_src>Gamma5 Gamma5 GammaTGamma5 GammaTGamma5</gamma_src>
+        <gamma_snk>Gamma5 GammaTGamma5 Gamma5 GammaTGamma5</gamma_snk>
+        <light>1</light>                  <!-- 1: light spectator and light loop, as in the saving run -->
+        <rhq_impr>no</rhq_impr>
+        <n2_min>0</n2_min>
+        <n2_max>0</n2_max>
+        <ss>0</ss>
+        <moms>all</moms>
+    </mesonPar>
+    <flowPar> <!-- same flow as the saving run -->
+        <output></output>
+        <action>Wilson</action>
+        <steps>10</steps>
+        <step_size>0.01</step_size>
+        <meas_interval>10</meas_interval>
+        <Tcoarsen>9.01</Tcoarsen>
+        <maxTau></maxTau>
+        <bc>-1</bc>
+    </flowPar>
+    <smearPar> <!-- same as the saving run: the regenerated wall sources close the spectator -->
+        <smear>1</smear>
+        <width>6.5</width>
+        <iterations>100</iterations>
+        <orthog>3</orthog>
+    </smearPar>
+    <hqePar> <!-- only probeGammas is used (source and sink of the eyes) -->
+        <probeGammas>Gamma5</probeGammas> <!-- Gamma5 and/or GammaTGamma5 -->
+        <vectorGammas>none</vectorGammas>
+        <twoQuark>false</twoQuark>
+        <vertices></vertices>
+        <dim7>false</dim7>
+        <gammaPairs></gammaPairs>
+        <atTau0>true</atTau0>
+    </hqePar>
+    <stochasticPar>
+        <nSrcs>1</nSrcs>
+        <nsparse>2</nsparse>              <!-- nSrcs*nsparse^4 noise components, one 12-column solve each per loop flavour -->
+        <c_fl>0.0</c_fl>                  <!-- scalar condensate improvement; 0 for DWF -->
+        <eyeGammaPairs>all</eyeGammaPairs> <!-- WeakEye3pt gamma pairs: diag, all, or "(G1 G2)..."; all for the penguin-type operators -->
+    </stochasticPar>
+</grid>

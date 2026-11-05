@@ -1,4 +1,7 @@
 <?xml version="1.0"?>
+<!-- FermionFlow_Lifetimes: 2pts, two-quark HQE 3pts, dim-6 four-quark 3pts and dim-7 DeltaB=2, for pseudoscalar mesons.
+     With saveWalls = 1 it also saves the unflowed wall propagators for FermionFlow_Eyes (run/input_eyes.xml, which must
+     repeat runId, configPar, the quark names, smearPar, flowPar and wallStem/wallIo32 of this file). -->
 <grid>
     <runPar>
         <runId>test</runId>
@@ -6,8 +9,8 @@
         <restore>false</restore>
         <scheduler>naive</scheduler>
         <flowChaining>step</flowChaining> <!-- step or interval -->
-        <eyes>0</eyes>                    <!-- 1: dim-6 DeltaB=0 eyes and condensates (stochasticPar) in this run -->
-        <saveWalls>0</saveWalls>          <!-- 1: save the unflowed wall propagators for FermionFlow_Eyes -->
+        <eyes>0</eyes>                    <!-- 1: dim-6 DeltaB=0 eyes and condensates (stochasticPar) in this run instead of FermionFlow_Eyes -->
+        <saveWalls>1</saveWalls>          <!-- 1: save the unflowed wall propagators for FermionFlow_Eyes -->
         <wallStem>walls</wallStem>        <!-- directory of the saved wall propagators -->
         <wallIo32>1</wallIo32>            <!-- 1: wall propagators on disk in single precision -->
     </runPar>
@@ -65,6 +68,7 @@
         <file_name>ApplicationTest</file_name>
         <!-- <gamma_src></gamma_src>
         <gamma_snk></gamma_snk>-->
+        <!-- must contain (Gamma5 J) and (GammaTGamma5 J) for every probe J: flowed P and A0 for PCAC and the mass ratios -->
         <gamma_src>Gamma5 Gamma5 GammaTGamma5 GammaTGamma5 GammaX GammaY GammaZ GammaT</gamma_src>
         <gamma_snk>Gamma5 GammaTGamma5 Gamma5 GammaTGamma5 GammaX GammaY GammaZ GammaT</gamma_snk>
         <light>1</light>
@@ -97,14 +101,14 @@
     </smearPar>
     <hqePar>
         <probeGammas>Gamma5</probeGammas> <!-- Gamma5 and/or GammaTGamma5 -->
-        <vectorGammas>GammaX GammaY GammaZ</vectorGammas> <!-- B* 3pts: none, or a subset of GammaX GammaY GammaZ -->
+        <vectorGammas>none</vectorGammas> <!-- B* 3pts: none, or a subset of GammaX GammaY GammaZ (each needs the 2pt pair (g g)) -->
         <twoQuark>true</twoQuark>
-        <vertices></vertices>             <!-- empty = all ops (16 gammas + HQE operators) -->
+        <vertices></vertices>             <!-- empty = "all ops": 16 gammas + HQE operators, incl. the chirality-even g* mixing partners -->
         <dim7>true</dim7>
-        <gammaPairs></gammaPairs>         <!-- empty = diag (16 G x G) -->
+        <gammaPairs></gammaPairs>         <!-- dim-7 DeltaB=2 (WeakNonEye3ptDeriv) gamma pairs; empty = diag (16 G x G) -->
         <atTau0>true</atTau0>
     </hqePar>
-    <stochasticPar> <!-- read if runPar.eyes = 1, and by FermionFlow_Eyes -->
+    <stochasticPar> <!-- read only if runPar.eyes = 1; FermionFlow_Eyes reads its own copy (run/input_eyes.xml) -->
         <nSrcs>1</nSrcs>
         <nsparse>2</nsparse>              <!-- nSrcs*nsparse^4 noise components, one 12-column solve each per loop flavour -->
         <c_fl>0.0</c_fl>                  <!-- scalar condensate improvement; 0 for DWF -->
