@@ -268,7 +268,8 @@ int main(int argc, char *argv[])
         spectators.push_back("l");
     }
 
-    // save the unflowed wall propagators for FermionFlow_Eyes
+    // save the unflowed wall propagators for FermionFlow_Eyes, and the light/strange wall sources that close its
+    // spectators (so FermionFlow_Eyes can use any runId for new loop noise)
     if (saveWalls) {
         if (Grid::CartesianCommunicator::RankWorld() == 0 && Hadrons::mkdir(runPar.wallStem)) {
             HADRONS_ERROR(Io, "cannot create runPar.wallStem directory '" + runPar.wallStem + "'");
@@ -277,6 +278,7 @@ int main(int argc, char *argv[])
             for (auto &f : flavs) {
                 make_save_wall(application, w.q[f], runPar.wallStem, runPar.wallIo32 == 1);
             }
+            make_save_field(application, w.gsrc, wall_source(w.t), runPar.wallStem, runPar.wallIo32 == 1);
         }
     }
 

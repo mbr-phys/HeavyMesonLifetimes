@@ -478,12 +478,18 @@ std::string wall_file(const std::string &wallStem, const std::string &prop) {
     return wallStem + "/" + prop;
 }
 
-// save an (unflowed) wall propagator to <wallStem>/<prop>.<traj>.bin
-std::string make_save_wall(Application &application, const std::string &prop, const std::string &wallStem, bool io32) {
+// file name of the saved source of wall t: the field the light/strange walls were solved on (smeared Z2 if smear == 1,
+// else Z2), against which FermionFlow_Eyes closes the spectators. Saved so that the eyes do not depend on the runId seed.
+std::string wall_source(int t) {
+    return "src_" + std::to_string(t);
+}
+
+// save an (unflowed) 4D PropagatorField to <wallStem>/<file>.<traj>.bin
+std::string make_save_field(Application &application, const std::string &field, const std::string &file, const std::string &wallStem, bool io32) {
     MIO::SavePropagator::Par savePar;
-    savePar.name     = prop;
-    savePar.fileStem = wall_file(wallStem, prop);
-    std::string name = "save_" + prop;
+    savePar.name     = field;
+    savePar.fileStem = wall_file(wallStem, file);
+    std::string name = "save_" + field;
     if (io32) {
         application.createModule<MIO::SavePropagatorIo32>(name, savePar);
     } else {
@@ -492,19 +498,29 @@ std::string make_save_wall(Application &application, const std::string &prop, co
     return name;
 }
 
-// load a wall propagator saved by make_save_wall; the loaded field is called prop
-std::string make_load_wall(Application &application, const std::string &prop, const std::string &wallStem, bool io32) {
+// load a field saved by make_save_field; the loaded field is called field
+std::string make_load_field(Application &application, const std::string &field, const std::string &file, const std::string &wallStem, bool io32) {
     MIO::LoadPropagator::Par loadPar;
-    loadPar.name     = prop;
+    loadPar.name     = field;
     loadPar.Ls       = 1;
-    loadPar.fileStem = wall_file(wallStem, prop);
-    std::string name = "load_" + prop;
+    loadPar.fileStem = wall_file(wallStem, file);
+    std::string name = "load_" + field;
     if (io32) {
         application.createModule<MIO::LoadPropagatorIo32>(name, loadPar);
     } else {
         application.createModule<MIO::LoadPropagator>(name, loadPar);
     }
-    return prop;
+    return field;
+}
+
+// save an (unflowed) wall propagator to <wallStem>/<prop>.<traj>.bin
+std::string make_save_wall(Application &application, const std::string &prop, const std::string &wallStem, bool io32) {
+    return make_save_field(application, prop, prop, wallStem, io32);
+}
+
+// load a wall propagator saved by make_save_wall; the loaded field is called prop
+std::string make_load_wall(Application &application, const std::string &prop, const std::string &wallStem, bool io32) {
+    return make_load_field(application, prop, prop, wallStem, io32);
 }
 
 // ****************************

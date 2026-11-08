@@ -1,12 +1,13 @@
 <?xml version="1.0"?>
 <!-- FermionFlow_Eyes: dim-6 DeltaB=0 eye diagrams and stochastic condensates only, from the wall propagators saved by
      FermionFlow_Lifetimes (run/input_fermion.xml with runPar.saveWalls = 1).
-     Must match the saving run exactly: runId (seeds the Z2 wall noise used for the spectator sink), configPar, the quark
-     names (wall files are <wallStem>/<quark>_<t>.<traj>.bin), smearPar, flowPar, mesonPar.light and runPar.wallStem/wallIo32.
-     Output: <mesonPar.file_name>_eyes; application database <appDb stem>_eyes.db. stoutPar is not read. -->
+     Must match the saving run: configPar, the quark names (wall files are <wallStem>/<quark>_<t>.<traj>.bin, wall sources
+     <wallStem>/src_<t>.<traj>.bin), flowPar, mesonPar.light and runPar.wallStem/wallIo32. runId only seeds the loop noise:
+     use a new runId for more noise hits.
+     Output: <mesonPar.file_name>_<runId>; application database <appDb stem>_eyes.db. stoutPar and smearPar are not read. -->
 <grid>
     <runPar>
-        <runId>test</runId>               <!-- same as the saving run -->
+        <runId>test</runId>               <!-- seeds the loop noise and names the output; the saving run's runId gives the noise of runPar.eyes = 1 there -->
         <appDb>Schedule.db</appDb>        <!-- used as Schedule_eyes.db -->
         <restore>false</restore>
         <scheduler>naive</scheduler>
@@ -87,12 +88,6 @@
         <maxTau></maxTau>
         <bc>-1</bc>
     </flowPar>
-    <smearPar> <!-- same as the saving run: the regenerated wall sources close the spectator -->
-        <smear>1</smear>
-        <width>6.5</width>
-        <iterations>100</iterations>
-        <orthog>3</orthog>
-    </smearPar>
     <hqePar> <!-- only probeGammas is used (source and sink of the eyes) -->
         <probeGammas>Gamma5</probeGammas> <!-- Gamma5 and/or GammaTGamma5 -->
         <vectorGammas>none</vectorGammas>

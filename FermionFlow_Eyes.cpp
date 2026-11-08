@@ -8,9 +8,10 @@ using namespace Grid;
 using namespace Hadrons;
 
 // Dim-6 DeltaB=0 eye diagrams and condensates only, from the unflowed wall propagators saved by
-// FermionFlow_Lifetimes (runPar.saveWalls = 1). Uses the same input file: runPar.runId must be the same as
-// in the run that saved the walls, so that the Z2 wall noise (needed for the spectator sink) is identical.
-// The stochastic noise, solves, flow and contractions are the same as with runPar.eyes = 1 in FermionFlow_Lifetimes.
+// FermionFlow_Lifetimes (runPar.saveWalls = 1), together with the wall sources that close the spectators. Nothing
+// depends on the saving run's runId: runPar.runId only seeds the loop noise, so a new runId gives new noise hits.
+// The stochastic noise, solves, flow and contractions are the same as with runPar.eyes = 1 in FermionFlow_Lifetimes
+// (identical noise with the same runId).
 
 // set fermion boundary conditions to be periodic space, antiperiodic time.
 std::string boundary = "1 1 1 -1";
@@ -25,7 +26,6 @@ struct XmlPar
     XmlInputs::DwfPar        dwfParl;
     XmlInputs::MesonPar      mesonPar;
     XmlInputs::FlowPar       flowPar;
-    XmlInputs::SmearPar      smearPar;
     XmlInputs::HQEPar        hqePar;
     XmlInputs::StochasticPar stochasticPar;
 };
@@ -62,7 +62,6 @@ int main(int argc, char *argv[])
     read(reader, "ldwfPar",       xmlPar.dwfParl);
     read(reader, "mesonPar",      xmlPar.mesonPar);
     read(reader, "flowPar",       xmlPar.flowPar);
-    read(reader, "smearPar",      xmlPar.smearPar);
     read(reader, "hqePar",        xmlPar.hqePar);
     read(reader, "stochasticPar", xmlPar.stochasticPar);
 
@@ -79,7 +78,6 @@ int main(int argc, char *argv[])
     auto &flowPar   = xmlPar.flowPar;
     auto &runPar    = xmlPar.runPar;
     const bool light = (xmlPar.mesonPar.light == 1);
-    const bool smear = (xmlPar.smearPar.smear == 1);
 
     const std::string chaining = runPar.flowChaining;
     if (chaining != "step" && chaining != "interval") {
@@ -101,6 +99,9 @@ int main(int argc, char *argv[])
         if (t < 0 || t >= (int)configPar.Tmax) {
             return fail("source time " + std::to_string(t) + " outside [0, Tmax)");
         }
+    }
+    if (runPar.runId.empty()) {
+        return fail("runPar.runId must be set (it seeds the loop noise and names the output)");
     }
     if (runPar.wallStem.empty() || runPar.wallIo32 > 1) {
         return fail("runPar.wallStem must be set and runPar.wallIo32 must be 0 or 1");
@@ -139,7 +140,7 @@ int main(int argc, char *argv[])
     // run setup
     Application application;
 
-    // global parameters (same runId as the run that saved the walls)
+    // global parameters (runId seeds the loop noise; nothing depends on the saving run's runId)
     Application::GlobalPar globalPar;
     globalPar.trajCounter.start        = configPar.begin;
     globalPar.trajCounter.end          = configPar.end;
@@ -179,11 +180,15 @@ int main(int argc, char *argv[])
     std::vector<std::string> flavs = {"b"};
     flavs.insert(flavs.end(), spectators.begin(), spectators.end());
 
-    // same sources as in FermionFlow_Lifetimes; propagator names as there (<quark>_<t>)
+    // walls as saved by FermionFlow_Lifetimes: propagators (<quark>_<t>) and the light/strange source (src_<t>), which
+    // closes the spectators at t_f; the heavy Z2 source is not needed
     std::map<std::string, std::string> quark = {{"b", xmlPar.mdwfParh.quark}, {"s", xmlPar.dwfPars.quark}, {"l", xmlPar.dwfParl.quark}};
     std::vector<Wall> walls;
     for (int t : configPar.sources) {
-        Wall w = make_wall(application, t, smear, xmlPar.smearPar);
+        Wall w;
+        w.t    = t;
+        w.tag  = std::to_string(t);
+        w.gsrc = make_load_field(application, wall_source(t), wall_source(t), runPar.wallStem, runPar.wallIo32 == 1);
         for (auto &f : flavs) {
             w.q[f] = make_load_wall(application, quark[f] + "_" + w.tag, runPar.wallStem, runPar.wallIo32 == 1);
         }
@@ -225,7 +230,7 @@ int main(int argc, char *argv[])
     // pass all groups of contractions to a single output file
     MIO::WriteResultGroup::Par WCPar;
     WCPar.results = corrgroups;
-    WCPar.output = xmlPar.mesonPar.file_name + "_eyes";
+    WCPar.output = xmlPar.mesonPar.file_name + "_" + runPar.runId; // one file per noise ensemble
     application.createModule<MIO::WriteResultGroup>("WriteToFile",WCPar);
 
     // execution
