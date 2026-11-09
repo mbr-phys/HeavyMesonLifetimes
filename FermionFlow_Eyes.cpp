@@ -109,9 +109,7 @@ int main(int argc, char *argv[])
     if (xmlPar.stochasticPar.nSrcs == 0 || xmlPar.stochasticPar.nsparse == 0) {
         return fail("stochasticPar.nSrcs and stochasticPar.nsparse must be positive");
     }
-    if (xmlPar.stochasticPar.eyeGammaPairs.empty()) {
-        return fail("stochasticPar.eyeGammaPairs must be set (diag, all or a list of pairs)");
-    }
+    const std::string eyePairs = gamma_pairs(xmlPar.stochasticPar.eyeGammaPairs);
 
     std::vector<std::string> probes;
     std::string err = parse_probes(xmlPar.hqePar.probeGammas, probes);
@@ -215,7 +213,7 @@ int main(int argc, char *argv[])
     //////////////////////////////////////
     const std::string label0 = tauLabel(0, flowPar.step_size);
     std::vector<std::string> step0 = {make_wilsonflow0(application, "WilsonFlow_t"+label0, "trans_gauge", flowPar)};
-    make_eyes(application, noise, walls, pairs, spectators, probes, vectors, label0, "trans_gauge", true, xmlPar.stochasticPar.c_fl, xmlPar.stochasticPar.eyeGammaPairs, step0);
+    make_eyes(application, noise, walls, pairs, spectators, probes, vectors, label0, "trans_gauge", true, xmlPar.stochasticPar.c_fl, eyePairs, step0);
     std::vector<std::string> corrgroups = {make_corrgroup(application, "FlowTime_t"+label0, step0)};
 
     /////////////////////////////////////////
@@ -230,7 +228,7 @@ int main(int argc, char *argv[])
     flowFields.insert(flowFields.end(), eyeFields.begin(), eyeFields.end());
     std::vector<std::string> flowGroups = make_flow_chain(application, flowPar, chaining, "trans_gauge", flowFields,
         [&](const std::string &label, const std::string &gauge_tau, double tau, std::vector<std::string> &group) {
-            make_eyes(application, noise, walls, pairs, spectators, probes, vectors, label, gauge_tau, false, xmlPar.stochasticPar.c_fl, xmlPar.stochasticPar.eyeGammaPairs, group);
+            make_eyes(application, noise, walls, pairs, spectators, probes, vectors, label, gauge_tau, false, xmlPar.stochasticPar.c_fl, eyePairs, group);
         });
     corrgroups.insert(corrgroups.end(), flowGroups.begin(), flowGroups.end());
 

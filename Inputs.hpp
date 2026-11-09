@@ -118,6 +118,7 @@ namespace XmlInputs
                                         std::string, vertices,      // two-quark vertex sets, empty = "all ops"
                                         bool, dim7,                 // WeakNonEye3ptDeriv dim-7 DeltaB=2 instances (Beneke-Buchalla-Dunietz)
                                         std::string, gammaPairs,    // dim-7 four-quark gamma pairs, empty = "diag"
+                                        std::string, deltaB0Pairs,  // DeltaHs0_T1 operator pairs: empty/hqe (diag + vector-class penguin pairs, 32), diag, all or "(G1 G2)..."
                                         bool, topology2,            // DeltaHs0_T2 legs (q_i, q_i, h_f, h_f): not a B->B 3pt, round-1 regression only
                                         bool, atTau0);              // also run the HeavyMeson3pt/WeakNonEye3ptDeriv instances at zero flow time
     };
@@ -129,7 +130,7 @@ namespace XmlInputs
                                         unsigned int, nSrcs,        // noise hits
                                         unsigned int, nsparse,      // sparse dilution per direction (nSrcs*nsparse^4 components)
                                         double, c_fl,               // flow-time improvement coefficient of the scalar condensate (as in SParameterGF)
-                                        std::string, eyeGammaPairs); // WeakEye3pt gamma pairs: diag, all or "(G1 G2)..."; all for the penguin-type operators
+                                        std::string, eyeGammaPairs); // WeakEye3pt gamma pairs: empty/hqe (diag + vector-class penguin pairs, 32), diag, all or "(G1 G2)..."
     };
 
     class StoutPar : Serializable

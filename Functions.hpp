@@ -556,23 +556,6 @@ std::string make_contraction(Application &application, std::string meson, std::s
     return name;
 }
 
-//weaknoneye 4quark
-std::string make_weaknoneye(Application &application, std::string qbl, std::string ql, std::string qbr, std::string qr, Gamma::Algebra gIn, Gamma::Algebra gOut, std::string output, std::string name) {
-
-    MContraction::WeakNonEye3pt::Par weakPar;
-    weakPar.qLeft = ql;
-    weakPar.qBarLeft = qbl;
-    weakPar.qRight = qr;
-    weakPar.qBarRight = qbr;
-    weakPar.gammaIn = gIn;
-    weakPar.gammaOut = gOut;
-    if (output.length() > 0) {
-        weakPar.output = output;}
-
-    application.createModule<MContraction::WeakNonEye3pt>(name,weakPar);
-    return name;
-}
-
 //weakeye 4quark
 std::string make_weakeye(Application &application, std::string qbl, std::string qbr, std::string qspec, std::string loop, unsigned int tOut, Gamma::Algebra gIn, Gamma::Algebra gOut, std::string gammaPairs, std::string output, std::string name) {
 
@@ -659,6 +642,33 @@ std::vector<MContraction::WeakDerivSpec> dim7Specs(void) {
         deriv("qBarRight", "0 1 2 3", "G1"),
         deriv("qBarRight", "0 1 2 3", "G2")
     };
+}
+
+// four-quark operator gamma pairs; empty or "hqe" = the 16 diagonal G x G (O_1, O_2, T_1, T_2 and the scalar-class
+// penguins) plus the 16 parity-even (G, gamma_4 G) pairs that the Fierzed colour-octet vector-class penguins
+// (bbar t^a b)(qbar gamma_4 t^a q) need, 12 of them with a sigma; anything else (diag, all, a list) is passed through
+std::string gamma_pairs(const std::string &pairs) {
+    if (!pairs.empty() && pairs != "hqe") {
+        return pairs;
+    }
+    const std::vector<std::string> diag = {
+        "Identity", "Gamma5", "GammaX", "GammaY", "GammaZ", "GammaT",
+        "GammaXGamma5", "GammaYGamma5", "GammaZGamma5", "GammaTGamma5",
+        "SigmaXY", "SigmaXZ", "SigmaYZ", "SigmaXT", "SigmaYT", "SigmaZT"
+    };
+    const std::vector<std::pair<std::string, std::string>> vectorClass = {
+        {"Identity", "GammaT"}, {"Gamma5", "GammaTGamma5"},
+        {"GammaX", "SigmaXT"}, {"GammaY", "SigmaYT"}, {"GammaZ", "SigmaZT"},
+        {"GammaXGamma5", "SigmaYZ"}, {"GammaYGamma5", "SigmaXZ"}, {"GammaZGamma5", "SigmaXY"}
+    };
+    std::string list;
+    for (auto &g : diag) {
+        list += "(" + g + " " + g + ")";
+    }
+    for (auto &p : vectorClass) {
+        list += "(" + p.first + " " + p.second + ")(" + p.second + " " + p.first + ")";
+    }
+    return list;
 }
 
 // WeakNonEye3ptDeriv: four-quark 3pts with gamma pairs and derivatives on the legs, zero momentum

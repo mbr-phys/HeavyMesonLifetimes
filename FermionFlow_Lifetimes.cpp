@@ -104,9 +104,6 @@ int main(int argc, char *argv[])
     if (eyes && (xmlPar.stochasticPar.nSrcs == 0 || xmlPar.stochasticPar.nsparse == 0)) {
         return fail("stochasticPar.nSrcs and stochasticPar.nsparse must be positive when runPar.eyes = 1");
     }
-    if (eyes && xmlPar.stochasticPar.eyeGammaPairs.empty()) {
-        return fail("stochasticPar.eyeGammaPairs must be set (diag, all or a list of pairs) when runPar.eyes = 1");
-    }
 
     // probe gammas (source/sink of every 3pt)
     std::vector<std::string> probes;
@@ -122,11 +119,13 @@ int main(int argc, char *argv[])
     }
     const std::string vertices   = hqePar.vertices.empty() ? "all ops" : hqePar.vertices;
     const std::string gammaPairs = hqePar.gammaPairs.empty() ? "diag" : hqePar.gammaPairs;
+    const std::string deltaB0Pairs = gamma_pairs(hqePar.deltaB0Pairs);
+    const std::string eyePairs     = gamma_pairs(xmlPar.stochasticPar.eyeGammaPairs);
 
     // 2pt gamma pairs; an empty gamma_snk means all
-    std::string gamma_pairs = "";
+    std::string mesonPairs = "";
     if (xmlPar.mesonPar.gamma_snk == "") {
-        gamma_pairs = "all";
+        mesonPairs = "all";
     } else {
         std::vector<std::string> gamma_src_vec = split_gammas(xmlPar.mesonPar.gamma_src,' ');
         std::vector<std::string> gamma_snk_vec = split_gammas(xmlPar.mesonPar.gamma_snk,' ');
@@ -140,7 +139,7 @@ int main(int argc, char *argv[])
         }
         for (int i = 0; i < gamma_src_vec.size(); i++) {
             std::string pair = "(" + gamma_snk_vec[i] + " " + gamma_src_vec[i] + ")";
-            gamma_pairs += pair;
+            mesonPairs += pair;
         }
         // the probe 2pts are needed for the 3pt ratios: flowed P and A0 at the sink (PCAC, D_k>=1) for every 3pt source
         std::vector<std::string> required = {};
@@ -154,7 +153,7 @@ int main(int argc, char *argv[])
             required.push_back("(" + g + " " + g + ")");
         }
         for (auto &pair : required) {
-            if (gamma_pairs.find(pair) == std::string::npos) {
+            if (mesonPairs.find(pair) == std::string::npos) {
                 return fail("mesonPar gamma pairs must contain the pair " + pair);
             }
         }
@@ -309,26 +308,26 @@ int main(int argc, char *argv[])
             const std::string suf = "_t" + w.tag + "_" + label;
 
             // 2pt contractions
-            group.push_back(make_contraction(application, "sh_"+SM+suf, sq, hq, gamma_pairs, snk_str, "", true, false));
-            group.push_back(make_contraction(application, "ss_"+SM+suf, sq, sq, gamma_pairs, snk_str, "", true, false));
-            group.push_back(make_contraction(application, "hh_PP"+suf, hq, hq, gamma_pairs, snk_str, "", true, false));
+            group.push_back(make_contraction(application, "sh_"+SM+suf, sq, hq, mesonPairs, snk_str, "", true, false));
+            group.push_back(make_contraction(application, "ss_"+SM+suf, sq, sq, mesonPairs, snk_str, "", true, false));
+            group.push_back(make_contraction(application, "hh_PP"+suf, hq, hq, mesonPairs, snk_str, "", true, false));
             if (light) {
                 const std::string lq = qt(w, "l");
-                group.push_back(make_contraction(application, "lh_"+SM+suf, lq, hq, gamma_pairs, snk_str, "", true, false));
-                group.push_back(make_contraction(application, "ls_"+SM+suf, lq, sq, gamma_pairs, snk_str, "", true, false));
-                group.push_back(make_contraction(application, "ll_"+SM+suf, lq, lq, gamma_pairs, snk_str, "", true, false));
+                group.push_back(make_contraction(application, "lh_"+SM+suf, lq, hq, mesonPairs, snk_str, "", true, false));
+                group.push_back(make_contraction(application, "ls_"+SM+suf, lq, sq, mesonPairs, snk_str, "", true, false));
+                group.push_back(make_contraction(application, "ll_"+SM+suf, lq, lq, mesonPairs, snk_str, "", true, false));
             }
 
             // 2pt contractions with smearing at source and sink, only at zero flow time
             if (tau0 && xmlPar.mesonPar.ss == 1 && smear) {
                 std::string sqsm = make_SmrSrc(application, xmlPar.smearPar, sq, "trans_gauge", "_smr");
-                group.push_back(make_contraction(application, "sh_SS"+suf, sqsm, hq, gamma_pairs, snk_str, "", true, false));
-                group.push_back(make_contraction(application, "ss_SS"+suf, sqsm, sqsm, gamma_pairs, snk_str, "", true, false));
+                group.push_back(make_contraction(application, "sh_SS"+suf, sqsm, hq, mesonPairs, snk_str, "", true, false));
+                group.push_back(make_contraction(application, "ss_SS"+suf, sqsm, sqsm, mesonPairs, snk_str, "", true, false));
                 if (light) {
                     std::string lqsm = make_SmrSrc(application, xmlPar.smearPar, qt(w, "l"), "trans_gauge", "_smr");
-                    group.push_back(make_contraction(application, "lh_SS"+suf, lqsm, hq, gamma_pairs, snk_str, "", true, false));
-                    group.push_back(make_contraction(application, "ls_SS"+suf, lqsm, sqsm, gamma_pairs, snk_str, "", true, false));
-                    group.push_back(make_contraction(application, "ll_SS"+suf, lqsm, lqsm, gamma_pairs, snk_str, "", true, false));
+                    group.push_back(make_contraction(application, "lh_SS"+suf, lqsm, hq, mesonPairs, snk_str, "", true, false));
+                    group.push_back(make_contraction(application, "ls_SS"+suf, lqsm, sqsm, mesonPairs, snk_str, "", true, false));
+                    group.push_back(make_contraction(application, "ll_SS"+suf, lqsm, lqsm, mesonPairs, snk_str, "", true, false));
                 }
             }
         }
@@ -343,29 +342,35 @@ int main(int argc, char *argv[])
                 const std::string qi = qt(wi, f), qf = qt(wf, f);
                 const std::string pre = f + "h_";
 
-                // dim-6 weak non-eye contractions, for every probe pair. DeltaHs0_T1 ("topology 1") gives all of
-                // O_1, O_2, T_1, T_2 from its two traces; DeltaHs0_T2 is the old topology 2 (q_i, q_i, h_f, h_f),
-                // not a B -> B 3pt, kept only for the round-1 regression (hqePar.topology2)
+                // dim-6 weak non-eye contractions, all WeakNonEye3ptDeriv without derivatives (one output format).
+                // DeltaHs0_T1 ("topology 1") gives all of O_1, O_2, T_1, T_2 from its two traces, with the operator pairs
+                // hqePar.deltaB0Pairs (default hqe: diag plus the off-diagonal pairs of the Fierzed vector-class penguins).
+                // DeltaHs0_T2 is the old topology 2 (q_i, q_i, h_f, h_f), not a B -> B 3pt, kept only for the round-1
+                // regression (hqePar.topology2)
+                auto weak4q = [&](const std::string &qbl, const std::string &ql, const std::string &qbr, const std::string &qr,
+                                  Gamma::Algebra gI, Gamma::Algebra gO, const std::string &opPairs, const std::string &name) {
+                    group.push_back(make_weaknoneye_deriv(application, qbl, ql, qbr, qr, gI, gO, opPairs, {deriv("none", "", "")}, gauge_tau, flowPar.bc, name));
+                };
                 for (auto &gIn : probes) {
                     for (auto &gOut : probes) {
                         Gamma::Algebra gI = strToVec<Gamma::Algebra>(gIn)[0], gO = strToVec<Gamma::Algebra>(gOut)[0];
                         const std::string g = "_" + probeTag(gIn) + "_" + probeTag(gOut);
-                        group.push_back(make_weaknoneye(application, hi, qi, qf, hf, gI, gO, "", pre+"DeltaHs2"+g+suf));
-                        group.push_back(make_weaknoneye(application, qi, hi, qf, hf, gI, gO, "", pre+"DeltaHs0_T1"+g+suf));
+                        weak4q(hi, qi, qf, hf, gI, gO, "diag", pre+"DeltaHs2"+g+suf);
+                        weak4q(qi, hi, qf, hf, gI, gO, deltaB0Pairs, pre+"DeltaHs0_T1"+g+suf);
                         if (hqePar.topology2) {
-                            group.push_back(make_weaknoneye(application, qi, qi, hf, hf, gI, gO, "", pre+"DeltaHs0_T2"+g+suf));
+                            weak4q(qi, qi, hf, hf, gI, gO, "diag", pre+"DeltaHs0_T2"+g+suf);
                         }
                     }
                 }
 
-                // dim-6 weak non-eye contractions in the B*, diagonal in the polarisation
+                // dim-6 DeltaB=0 weak non-eye contractions in the B*, diagonal in the polarisation (for the rho regression;
+                // no DeltaHs2, B*-B*bar mixing is not needed)
                 for (auto &gV : vectors) {
                     Gamma::Algebra gG = strToVec<Gamma::Algebra>(gV)[0];
                     const std::string g = "_" + vectorTag(gV) + "_" + vectorTag(gV);
-                    group.push_back(make_weaknoneye(application, hi, qi, qf, hf, gG, gG, "", pre+"DeltaHs2"+g+suf));
-                    group.push_back(make_weaknoneye(application, qi, hi, qf, hf, gG, gG, "", pre+"DeltaHs0_T1"+g+suf));
+                    weak4q(qi, hi, qf, hf, gG, gG, deltaB0Pairs, pre+"DeltaHs0_T1"+g+suf);
                     if (hqePar.topology2) {
-                        group.push_back(make_weaknoneye(application, qi, qi, hf, hf, gG, gG, "", pre+"DeltaHs0_T2"+g+suf));
+                        weak4q(qi, qi, hf, hf, gG, gG, "diag", pre+"DeltaHs0_T2"+g+suf);
                     }
                 }
 
@@ -389,7 +394,7 @@ int main(int argc, char *argv[])
 
         // dim-6 DeltaB=0 eyes and condensates
         if (eyes) {
-            make_eyes(application, noise, walls, pairs, spectators, probes, vectors, label, gauge_tau, tau0, xmlPar.stochasticPar.c_fl, xmlPar.stochasticPar.eyeGammaPairs, group);
+            make_eyes(application, noise, walls, pairs, spectators, probes, vectors, label, gauge_tau, tau0, xmlPar.stochasticPar.c_fl, eyePairs, group);
         }
     };
 
