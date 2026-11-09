@@ -826,7 +826,8 @@ void make_eye_spectators(Application &application, const std::vector<Wall> &wall
 // Names (suffix _t<t_i>_dt<dT>_<label> as for the other 3pts):
 //   condensate_<g>_stoch_<k>_t<label>, dslash_condensate_<g>_stoch_<k>_t<label>     (as in SParameterGF)
 //   <f>h_DeltaHs0_eye_<g>_<G>_<G>_t<t_i>_dt<dT>_<label>                             (WeakEye3pt, loop flavour g, gamma pairs gammaPairs)
-void make_eyes(Application &application, const EyeNoise &noise, const std::vector<Wall> &walls, const std::vector<WallPair> &pairs, const std::vector<std::string> &spectators, const std::vector<std::string> &probes, const std::string &label, const std::string &gauge, bool tau0, double c_fl, const std::string &gammaPairs, std::vector<std::string> &group) {
+// <G>_<G> runs over every pair of probes (pseudoscalar walls) and over the diagonal B* walls <V>_<V> (vectors).
+void make_eyes(Application &application, const EyeNoise &noise, const std::vector<Wall> &walls, const std::vector<WallPair> &pairs, const std::vector<std::string> &spectators, const std::vector<std::string> &probes, const std::vector<std::string> &vectors, const std::string &label, const std::string &gauge, bool tau0, double c_fl, const std::string &gammaPairs, std::vector<std::string> &group) {
     auto at = [&](const std::string &field) {
         return tau0 ? field : field + "_t" + label;
     };
@@ -864,6 +865,12 @@ void make_eyes(Application &application, const EyeNoise &noise, const std::vecto
                         const std::string g = "_" + probeTag(gIn) + "_" + probeTag(gOut);
                         group.push_back(make_weakeye(application, hi, hf, eye_spectator(wi, wf, f), gl.second, wf.t, gI, gO, gammaPairs, "", f + "h_DeltaHs0_eye_" + gl.first + g + suf));
                     }
+                }
+                // B*, diagonal in the polarisation
+                for (auto &gV : vectors) {
+                    Gamma::Algebra gG = strToVec<Gamma::Algebra>(gV)[0];
+                    const std::string g = "_" + vectorTag(gV) + "_" + vectorTag(gV);
+                    group.push_back(make_weakeye(application, hi, hf, eye_spectator(wi, wf, f), gl.second, wf.t, gG, gG, gammaPairs, "", f + "h_DeltaHs0_eye_" + gl.first + g + suf));
                 }
             }
         }

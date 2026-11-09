@@ -88,9 +88,9 @@
         <maxTau></maxTau>
         <bc>-1</bc>
     </flowPar>
-    <hqePar> <!-- only probeGammas is used (source and sink of the eyes) -->
+    <hqePar> <!-- only probeGammas and vectorGammas are used (source and sink of the eyes) -->
         <probeGammas>Gamma5</probeGammas> <!-- Gamma5 and/or GammaTGamma5 -->
-        <vectorGammas>none</vectorGammas>
+        <vectorGammas>none</vectorGammas> <!-- B* eyes: none, or a subset of GammaX GammaY GammaZ -->
         <twoQuark>false</twoQuark>
         <vertices></vertices>
         <dim7>false</dim7>

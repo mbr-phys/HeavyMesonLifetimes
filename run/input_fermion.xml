@@ -101,7 +101,7 @@
     </smearPar>
     <hqePar>
         <probeGammas>Gamma5</probeGammas> <!-- Gamma5 and/or GammaTGamma5 -->
-        <vectorGammas>none</vectorGammas> <!-- B* 3pts: none, or a subset of GammaX GammaY GammaZ (each needs the 2pt pair (g g)) -->
+        <vectorGammas>none</vectorGammas> <!-- B* 3pts (two-quark, four-quark and, with eyes, the eyes): none, or a subset of GammaX GammaY GammaZ (each needs the 2pt pair (g g)) -->
         <twoQuark>true</twoQuark>
         <vertices></vertices>             <!-- empty = "all ops": 16 gammas + HQE operators, incl. the chirality-even g* mixing partners -->
         <dim7>true</dim7>

@@ -389,7 +389,7 @@ int main(int argc, char *argv[])
 
         // dim-6 DeltaB=0 eyes and condensates
         if (eyes) {
-            make_eyes(application, noise, walls, pairs, spectators, probes, label, gauge_tau, tau0, xmlPar.stochasticPar.c_fl, xmlPar.stochasticPar.eyeGammaPairs, group);
+            make_eyes(application, noise, walls, pairs, spectators, probes, vectors, label, gauge_tau, tau0, xmlPar.stochasticPar.c_fl, xmlPar.stochasticPar.eyeGammaPairs, group);
         }
     };
 

@@ -119,6 +119,13 @@ int main(int argc, char *argv[])
         return fail(err);
     }
 
+    // B* walls (sink = source of the vector eyes)
+    std::vector<std::string> vectors;
+    err = parse_vectors(xmlPar.hqePar.vectorGammas, vectors);
+    if (!err.empty()) {
+        return fail(err);
+    }
+
     std::vector<WallPair> pairs;
     err = make_wall_pairs(configPar, pairs);
     if (!err.empty()) {
@@ -208,7 +215,7 @@ int main(int argc, char *argv[])
     //////////////////////////////////////
     const std::string label0 = tauLabel(0, flowPar.step_size);
     std::vector<std::string> step0 = {make_wilsonflow0(application, "WilsonFlow_t"+label0, "trans_gauge", flowPar)};
-    make_eyes(application, noise, walls, pairs, spectators, probes, label0, "trans_gauge", true, xmlPar.stochasticPar.c_fl, xmlPar.stochasticPar.eyeGammaPairs, step0);
+    make_eyes(application, noise, walls, pairs, spectators, probes, vectors, label0, "trans_gauge", true, xmlPar.stochasticPar.c_fl, xmlPar.stochasticPar.eyeGammaPairs, step0);
     std::vector<std::string> corrgroups = {make_corrgroup(application, "FlowTime_t"+label0, step0)};
 
     /////////////////////////////////////////
@@ -223,7 +230,7 @@ int main(int argc, char *argv[])
     flowFields.insert(flowFields.end(), eyeFields.begin(), eyeFields.end());
     std::vector<std::string> flowGroups = make_flow_chain(application, flowPar, chaining, "trans_gauge", flowFields,
         [&](const std::string &label, const std::string &gauge_tau, double tau, std::vector<std::string> &group) {
-            make_eyes(application, noise, walls, pairs, spectators, probes, label, gauge_tau, false, xmlPar.stochasticPar.c_fl, xmlPar.stochasticPar.eyeGammaPairs, group);
+            make_eyes(application, noise, walls, pairs, spectators, probes, vectors, label, gauge_tau, false, xmlPar.stochasticPar.c_fl, xmlPar.stochasticPar.eyeGammaPairs, group);
         });
     corrgroups.insert(corrgroups.end(), flowGroups.begin(), flowGroups.end());
 
