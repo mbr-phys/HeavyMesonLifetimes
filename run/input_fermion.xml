@@ -106,6 +106,7 @@
         <vertices></vertices>             <!-- empty = "all ops": 16 gammas + HQE operators, incl. the chirality-even g* mixing partners -->
         <dim7>true</dim7>
         <gammaPairs></gammaPairs>         <!-- dim-7 DeltaB=2 (WeakNonEye3ptDeriv) gamma pairs; empty = diag (16 G x G) -->
+        <topology2>false</topology2>     <!-- DeltaHs0_T2 (old topology 2, not B -> B): true only for the round-1 regression -->
         <atTau0>true</atTau0>
     </hqePar>
     <stochasticPar> <!-- read only if runPar.eyes = 1; FermionFlow_Eyes reads its own copy (run/input_eyes.xml) -->

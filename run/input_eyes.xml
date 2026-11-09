@@ -95,6 +95,7 @@
         <vertices></vertices>
         <dim7>false</dim7>
         <gammaPairs></gammaPairs>
+        <topology2>false</topology2>
         <atTau0>true</atTau0>
     </hqePar>
     <stochasticPar>

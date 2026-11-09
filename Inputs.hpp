@@ -116,8 +116,9 @@ namespace XmlInputs
                                         std::string, vectorGammas,  // B* 3pts (sink = source): "none" or a subset of GammaX GammaY GammaZ
                                         bool, twoQuark,             // HeavyMeson3pt two-quark (HQE) instances
                                         std::string, vertices,      // two-quark vertex sets, empty = "all ops"
-                                        bool, dim7,                 // WeakNonEye3ptDeriv dim-7 DeltaB=2 instances (Lenz-Nierste)
+                                        bool, dim7,                 // WeakNonEye3ptDeriv dim-7 DeltaB=2 instances (Beneke-Buchalla-Dunietz)
                                         std::string, gammaPairs,    // dim-7 four-quark gamma pairs, empty = "diag"
+                                        bool, topology2,            // DeltaHs0_T2 legs (q_i, q_i, h_f, h_f): not a B->B 3pt, round-1 regression only
                                         bool, atTau0);              // also run the HeavyMeson3pt/WeakNonEye3ptDeriv instances at zero flow time
     };
 

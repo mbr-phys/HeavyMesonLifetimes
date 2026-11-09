@@ -631,8 +631,11 @@ MContraction::WeakDerivSpec deriv(std::string legs, std::string dirs, std::strin
     return d;
 }
 
-// dim-7 DeltaB=2 derivative specifications, Lenz-Nierste basis (HQE_plan.md section 3.2)
+// dim-7 DeltaB=2 derivative specifications, Beneke-Buchalla-Dunietz basis R_0..R_4, R~_1..R~_4
+// (hep-ph/9605259; HQE_plan.md section 3.2)
 // legs: qBarLeft = h_i, qLeft = q_i, qBarRight = q_f, qRight = h_f
+// A-D are split into time (3) and space (0 1 2); the full D_rho...D^rho of R_2, R_3 is their sum
+// (with the Minkowski sign of the spatial part).
 std::vector<MContraction::WeakDerivSpec> dim7Specs(void) {
     return {
         deriv("none", "", ""),                                // dim 6: R_0, R_1, R~_1
@@ -640,10 +643,21 @@ std::vector<MContraction::WeakDerivSpec> dim7Specs(void) {
         deriv("qBarRight", "3", "none"),
         deriv("qBarLeft", "3", "none"),                       // D_4 on each bbar leg: -/+ M check
         deriv("qRight", "3", "none"),
-        deriv("qBarLeft qLeft", "0 1 2 3", "none"),           // A: full R_2, R_3, R~_2, R~_3
-        deriv("qRight qLeft", "0 1 2 3", "none"),             // B
-        deriv("qBarRight qRight", "0 1 2 3", "none"),         // C
-        deriv("qBarLeft qBarRight", "0 1 2 3", "none")        // D
+        deriv("qBarLeft qLeft", "3", "none"),                 // A: full R_2, R_3, R~_2, R~_3
+        deriv("qBarLeft qLeft", "0 1 2", "none"),
+        deriv("qRight qLeft", "3", "none"),                   // B
+        deriv("qRight qLeft", "0 1 2", "none"),
+        deriv("qBarRight qRight", "3", "none"),               // C
+        deriv("qBarRight qRight", "0 1 2", "none"),
+        deriv("qBarLeft qBarRight", "3", "none"),             // D
+        deriv("qBarLeft qBarRight", "0 1 2", "none"),
+        // R_4, R~_4: D_mu on s, gamma_mu in the other bilinear. With s = qLeft, G1 sits in the s bilinear in
+        // trace 2 (R_4: couple G2) and in the other bilinear in trace 1 (R~_4: couple G1); with s = qBarRight
+        // the other way round. Each spec's other trace is a Fierz partner.
+        deriv("qLeft", "0 1 2 3", "G2"),
+        deriv("qLeft", "0 1 2 3", "G1"),
+        deriv("qBarRight", "0 1 2 3", "G1"),
+        deriv("qBarRight", "0 1 2 3", "G2")
     };
 }
 

@@ -343,14 +343,18 @@ int main(int argc, char *argv[])
                 const std::string qi = qt(wi, f), qf = qt(wf, f);
                 const std::string pre = f + "h_";
 
-                // dim-6 weak non-eye contractions, for every probe pair
+                // dim-6 weak non-eye contractions, for every probe pair. DeltaHs0_T1 ("topology 1") gives all of
+                // O_1, O_2, T_1, T_2 from its two traces; DeltaHs0_T2 is the old topology 2 (q_i, q_i, h_f, h_f),
+                // not a B -> B 3pt, kept only for the round-1 regression (hqePar.topology2)
                 for (auto &gIn : probes) {
                     for (auto &gOut : probes) {
                         Gamma::Algebra gI = strToVec<Gamma::Algebra>(gIn)[0], gO = strToVec<Gamma::Algebra>(gOut)[0];
                         const std::string g = "_" + probeTag(gIn) + "_" + probeTag(gOut);
                         group.push_back(make_weaknoneye(application, hi, qi, qf, hf, gI, gO, "", pre+"DeltaHs2"+g+suf));
                         group.push_back(make_weaknoneye(application, qi, hi, qf, hf, gI, gO, "", pre+"DeltaHs0_T1"+g+suf));
-                        group.push_back(make_weaknoneye(application, qi, qi, hf, hf, gI, gO, "", pre+"DeltaHs0_T2"+g+suf));
+                        if (hqePar.topology2) {
+                            group.push_back(make_weaknoneye(application, qi, qi, hf, hf, gI, gO, "", pre+"DeltaHs0_T2"+g+suf));
+                        }
                     }
                 }
 
@@ -360,7 +364,9 @@ int main(int argc, char *argv[])
                     const std::string g = "_" + vectorTag(gV) + "_" + vectorTag(gV);
                     group.push_back(make_weaknoneye(application, hi, qi, qf, hf, gG, gG, "", pre+"DeltaHs2"+g+suf));
                     group.push_back(make_weaknoneye(application, qi, hi, qf, hf, gG, gG, "", pre+"DeltaHs0_T1"+g+suf));
-                    group.push_back(make_weaknoneye(application, qi, qi, hf, hf, gG, gG, "", pre+"DeltaHs0_T2"+g+suf));
+                    if (hqePar.topology2) {
+                        group.push_back(make_weaknoneye(application, qi, qi, hf, hf, gG, gG, "", pre+"DeltaHs0_T2"+g+suf));
+                    }
                 }
 
                 // two-quark HQE 3pts: flowed heavy legs, unflowed spectator, sink noise of wall t_f
@@ -368,7 +374,7 @@ int main(int argc, char *argv[])
                     group.push_back(make_hm3pt(application, pre+"HQE"+suf, gauge_tau, flowPar.bc, tau, hi, hf, wi.q.at(f), wf.gsrc, wf.t, triads));
                 }
 
-                // dim-7 DeltaB=2: DeltaHs2 legs with the Lenz-Nierste derivative specifications, one module per probe pair
+                // dim-7 DeltaB=2: DeltaHs2 legs with the Beneke-Buchalla-Dunietz derivative specifications, one module per probe pair
                 if (hqePar.dim7 && (!tau0 || hqePar.atTau0)) {
                     for (auto &gIn : probes) {
                         for (auto &gOut : probes) {
