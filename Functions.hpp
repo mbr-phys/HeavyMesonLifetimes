@@ -634,8 +634,8 @@ MContraction::WeakDerivSpec deriv(std::string legs, std::string dirs, std::strin
 // dim-7 DeltaB=2 derivative specifications, Beneke-Buchalla-Dunietz basis R_0..R_4, R~_1..R~_4
 // (hep-ph/9605259; HQE_plan.md section 3.2)
 // legs: qBarLeft = h_i, qLeft = q_i, qBarRight = q_f, qRight = h_f
-// A-D are split into time (3) and space (0 1 2); the full D_rho...D^rho of R_2, R_3 is their sum
-// (with the Minkowski sign of the spatial part).
+// A-D are split into time (3) and space (0 1 2); with D_0 = iD_4 the Minkowski D_rho...D^rho of R_2, R_3
+// is minus the sum of the two Euclidean parts.
 std::vector<MContraction::WeakDerivSpec> dim7Specs(void) {
     return {
         deriv("none", "", ""),                                // dim 6: R_0, R_1, R~_1
