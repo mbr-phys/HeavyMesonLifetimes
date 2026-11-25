@@ -20,7 +20,10 @@ namespace XmlInputs
                                         unsigned int, eyes,         // 1: dim-6 DeltaB=0 eyes and condensates (stochasticPar) in this run
                                         unsigned int, saveWalls,    // 1: save the unflowed wall propagators for FermionFlow_Eyes
                                         std::string, wallStem,      // directory of the saved wall propagators (<wallStem>/<prop>.<traj>.bin)
-                                        unsigned int, wallIo32);    // 1: save/load the wall propagators in single precision
+                                        unsigned int, wallIo32,     // 1: save/load the wall propagators in single precision
+                                        unsigned int, loadSrcs,     // 1: load the wall sources (src_<t>, z2_<t>) from srcStem instead of generating them
+                                        std::string, srcStem,       // directory of the saved wall sources (<srcStem>/src_<t>.<traj>.bin)
+                                        unsigned int, propIo32);    // 1: the propagators of <quark>Par.prop and the sources of srcStem are in single precision
     };
 
     class ConfigPar : Serializable
@@ -37,21 +40,6 @@ namespace XmlInputs
                                         unsigned int, Tmax);
     };
     
-    class DwfPar : Serializable
-    {
-    public:
-        GRID_SERIALIZABLE_CLASS_MEMBERS(DwfPar,
-                                        std::string, quark,
-                                        double, mass,
-                                        double, M5,
-                                        unsigned int, Ls,
-                                        double, residual,
-                                        unsigned int, maxiter,
-                                        unsigned int, maxiterOut,
-                                        unsigned int, maxiterIn,
-                                        std::string, prop);
-    };
-
     class MdwfPar : Serializable
     {
     public:
@@ -66,7 +54,7 @@ namespace XmlInputs
                                         unsigned int, maxiter,
                                         unsigned int, maxiterOut,
                                         unsigned int, maxiterIn,
-                                        std::string, prop);
+                                        std::string, prop);         // "none": solve, else load the propagators from <prop>_<t>.<traj>.bin
     };
 
     class MesonPar : Serializable
@@ -105,7 +93,8 @@ namespace XmlInputs
                                         int, meas_interval,
                                         double, Tcoarsen,
                                         std::string, maxTau,
-                                        int, bc); 
+                                        int, bc,
+                                        std::string, heavyLinks);   // heavy walls flowed from: thin (or empty, trans_gauge) or stout (Vgauge, stoutPar)
     };
 
     class HQEPar : Serializable

@@ -16,8 +16,8 @@ struct XmlPar
     XmlInputs::RunPar      runPar;
     XmlInputs::ConfigPar   configPar;
     XmlInputs::MdwfPar     mdwfParh;
-    XmlInputs::DwfPar      dwfPars;
-    XmlInputs::DwfPar      dwfParl;
+    XmlInputs::MdwfPar     dwfPars;
+    XmlInputs::MdwfPar     dwfParl;
     XmlInputs::MesonPar    mesonPar;
     XmlInputs::FlowPar     flowPar;
     XmlInputs::StoutPar    stoutPar;
@@ -86,6 +86,11 @@ int main(int argc, char *argv[])
     if (flowPar.bc != 1 && flowPar.bc != -1) {
         return fail("flowPar.bc must be +1 or -1");
     }
+    std::string err;
+    const bool stoutFlow = stoutHeavyFlow(flowPar, err);
+    if (!err.empty()) {
+        return fail(err);
+    }
     if (configPar.sources.empty() || configPar.Tmax == 0) {
         return fail("configPar.sources must not be empty and configPar.Tmax must be set");
     }
@@ -101,13 +106,37 @@ int main(int argc, char *argv[])
     if (saveWalls && runPar.wallStem.empty()) {
         return fail("runPar.wallStem must be set when runPar.saveWalls = 1");
     }
+    if (runPar.loadSrcs > 1 || runPar.propIo32 > 1) {
+        return fail("runPar.loadSrcs and runPar.propIo32 must be 0 or 1");
+    }
+    const bool loadSrcs = (runPar.loadSrcs == 1);
+    if (loadSrcs && runPar.srcStem.empty()) {
+        return fail("runPar.srcStem must be set when runPar.loadSrcs = 1");
+    }
+    // flavours loaded from <quark>Par.prop instead of solved
+    for (auto &p : std::vector<std::pair<std::string, std::string>>{{"hdwfPar", xmlPar.mdwfParh.prop},
+                                                                     {"sdwfPar", xmlPar.dwfPars.prop},
+                                                                     {"ldwfPar", xmlPar.dwfParl.prop}}) {
+        std::string perr = check_prop(p.first, p.second);
+        if (!perr.empty()) {
+            return fail(perr);
+        }
+    }
+    const bool loadH = loaded(xmlPar.mdwfParh.prop);
+    const bool loadS = loaded(xmlPar.dwfPars.prop);
+    const bool loadL = light && loaded(xmlPar.dwfParl.prop);
+    if ((loadH || loadS || loadL) && !loadSrcs) {
+        std::cerr << "warning: loaded propagators with generated wall sources (runPar.loadSrcs = 0): "
+                  << "the sources must match those of the saving run (same runId and smearing)" << std::endl;
+    }
+    const bool propIo32 = (runPar.propIo32 == 1);
     if (eyes && (xmlPar.stochasticPar.nSrcs == 0 || xmlPar.stochasticPar.nsparse == 0)) {
         return fail("stochasticPar.nSrcs and stochasticPar.nsparse must be positive when runPar.eyes = 1");
     }
 
     // probe gammas (source/sink of every 3pt)
     std::vector<std::string> probes;
-    std::string err = parse_probes(hqePar.probeGammas, probes);
+    err = parse_probes(hqePar.probeGammas, probes);
     if (!err.empty()) {
         return fail(err);
     }
@@ -166,12 +195,14 @@ int main(int argc, char *argv[])
         return fail(err);
     }
 
-    // two-quark triads "sink vertex source"; B* triads are diagonal in the polarisation
+    // two-quark triads "sink vertex source"; B* triads are diagonal in the polarisation.
+    // HeavyMeson3pt is run with its sink at t_i and its source at t_f (heavy quark t_i -> x -> t_f): with the adjoints
+    // below the interpolators are adj(gI) at t_i and gF at t_f, as in the connected four-quark 3pts and the eyes
     std::vector<std::string> triads = {};
     for (auto &v : split_gammas(vertices, ' ')) {
-        for (auto &gSnk : probes) {
-            for (auto &gSrc : probes) {
-                triads.push_back(gSnk + " " + v + " " + gSrc);
+        for (auto &gI : probes) {
+            for (auto &gF : probes) {
+                triads.push_back(adjName(gI) + " " + v + " " + adjName(gF));
             }
         }
         for (auto &g : vectors) {
@@ -217,7 +248,7 @@ int main(int argc, char *argv[])
     tPar.shift = configPar.source_loc;
     application.createModule<MUtilities::CShiftGaugeField>("trans_gauge",tPar);
 
-    // stout smear (heavy action only)
+    // stout smear (heavy action; with flowPar.heavyLinks = stout also the start of the heavy flow)
     MGauge::StoutSmearing::Par stPar;
     stPar.gauge = "trans_gauge";
     stPar.steps = xmlPar.stoutPar.steps;
@@ -240,20 +271,33 @@ int main(int argc, char *argv[])
     for (int k = 0; k < (int)configPar.sources.size(); k++) {
         int j = (k == 0) ? 0 : 1;
 
-        // Z2 wall, smeared for the light/strange quarks if smear == 1
-        Wall w = make_wall(application, configPar.sources[k], smear, xmlPar.smearPar);
+        // Z2 wall, smeared for the light/strange quarks if smear == 1; loaded from runPar.srcStem if loadSrcs
+        const int t = configPar.sources[k];
+        Wall w = loadSrcs ? load_wall(application, t, smear, runPar.srcStem, propIo32)
+                          : make_wall(application, t, smear, xmlPar.smearPar);
 
+        // each flavour is solved, or loaded from <quark>Par.prop (no Ward identity check: no 5D solution)
         // heavy quark
-        w.q["b"] = make_moebiusdwfpropagator(application, xmlPar.mdwfParh, w.z2, j, boundary, twist, "Vgauge", "_"+w.tag);
-        step0.push_back(make_wardid(application, w.q["b"], "MDWF_action_"+xmlPar.mdwfParh.quark+"_"+tag0, xmlPar.mdwfParh.mass, w.z2, "", "WardId_"+xmlPar.mdwfParh.quark+w.tag));
+        if (loadH) {
+            w.q["b"] = make_load_prop(application, xmlPar.mdwfParh.quark+"_"+w.tag, xmlPar.mdwfParh.prop, t, propIo32);
+        } else {
+            w.q["b"] = make_moebiusdwfpropagator(application, xmlPar.mdwfParh, w.z2, j, boundary, twist, "Vgauge", "_"+w.tag);
+            step0.push_back(make_wardid(application, w.q["b"], "MDWF_action_"+xmlPar.mdwfParh.quark+"_"+tag0, xmlPar.mdwfParh.mass, w.z2, "", "WardId_"+xmlPar.mdwfParh.quark+w.tag));
+        }
 
         // strange quark
-        w.q["s"] = make_mixeddwfpropagator(application, xmlPar.dwfPars, w.gsrc, j, boundary, twist, "trans_gauge", "trans_gaugeF", "_"+w.tag);
-        step0.push_back(make_wardid(application, w.q["s"], "DWF_action_"+xmlPar.dwfPars.quark+"_"+tag0, xmlPar.dwfPars.mass, w.gsrc, "", "WardId_"+xmlPar.dwfPars.quark+w.tag));
+        if (loadS) {
+            w.q["s"] = make_load_prop(application, xmlPar.dwfPars.quark+"_"+w.tag, xmlPar.dwfPars.prop, t, propIo32);
+        } else {
+            w.q["s"] = make_mixedmoebiusdwfpropagator(application, xmlPar.dwfPars, w.gsrc, j, boundary, twist, "trans_gauge", "trans_gaugeF", "_"+w.tag);
+            step0.push_back(make_wardid(application, w.q["s"], "DWF_action_"+xmlPar.dwfPars.quark+"_"+tag0, xmlPar.dwfPars.mass, w.gsrc, "", "WardId_"+xmlPar.dwfPars.quark+w.tag));
+        }
 
         // light quark
-        if (light) {
-            w.q["l"] = make_mixeddwfpropagator(application, xmlPar.dwfParl, w.gsrc, j, boundary, twist, "trans_gauge", "trans_gaugeF", "_"+w.tag);
+        if (light && loadL) {
+            w.q["l"] = make_load_prop(application, xmlPar.dwfParl.quark+"_"+w.tag, xmlPar.dwfParl.prop, t, propIo32);
+        } else if (light) {
+            w.q["l"] = make_mixedmoebiusdwfpropagator(application, xmlPar.dwfParl, w.gsrc, j, boundary, twist, "trans_gauge", "trans_gaugeF", "_"+w.tag);
             step0.push_back(make_wardid(application, w.q["l"], "DWF_action_"+xmlPar.dwfParl.quark+"_"+tag0, xmlPar.dwfParl.mass, w.gsrc, "", "WardId_"+xmlPar.dwfParl.quark+w.tag));
         }
         walls.push_back(w);
@@ -281,14 +325,21 @@ int main(int argc, char *argv[])
         }
     }
 
-    // stochastic loops for the eyes and condensates (solvers already created by the walls)
+    // stochastic loops for the eyes and condensates (solvers created by the solved walls, here for the loaded flavours)
     EyeNoise noise;
     if (eyes) {
-        std::map<std::string, XmlInputs::DwfPar *> loopPars = {{"s", &xmlPar.dwfPars}};
+        std::map<std::string, XmlInputs::MdwfPar *> loopPars = {{"s", &xmlPar.dwfPars}};
+        std::set<std::string> newSolvers = {};
+        if (loadS) {
+            newSolvers.insert("s");
+        }
         if (light) {
             loopPars["l"] = &xmlPar.dwfParl;
+            if (loadL) {
+                newSolvers.insert("l");
+            }
         }
-        noise = make_eye_noise(application, xmlPar.stochasticPar, loopPars, false, boundary, twist, "trans_gauge", "trans_gaugeF");
+        noise = make_eye_noise(application, xmlPar.stochasticPar, loopPars, newSolvers, boundary, twist, "trans_gauge", "trans_gaugeF");
         make_eye_spectators(application, walls, pairs, spectators);
     }
 
@@ -296,8 +347,10 @@ int main(int argc, char *argv[])
     std::string snk_str = make_PtSnk(application, snk_mom, "");
     const std::string SM = smear ? "SP" : "PP";
 
-    // all contractions at one flow time; label is the flow-time label, gauge the (flowed) gauge field
-    auto contract = [&](const std::string &label, const std::string &gauge_tau, double tau, bool tau0, std::vector<std::string> &group) {
+    // all contractions at one flow time; label is the flow-time label, gauges the (flowed) gauge fields: every derivative uses
+    // the links its leg was flowed with, gauges.heavy for the two-quark vertices and the heavy dim-7 legs (h_i, h_f),
+    // gauges.light for the light dim-7 legs and the eyes (Dslash of the light loops)
+    auto contract = [&](const std::string &label, const FlowGauges &gauges, double tau, bool tau0, std::vector<std::string> &group) {
         // propagator of flavour f from wall w at this flow time
         auto qt = [&](const Wall &w, const std::string &f) {
             return tau0 ? w.q.at(f) : w.q.at(f) + "_t" + label;
@@ -349,7 +402,7 @@ int main(int argc, char *argv[])
                 // regression (hqePar.topology2)
                 auto weak4q = [&](const std::string &qbl, const std::string &ql, const std::string &qbr, const std::string &qr,
                                   Gamma::Algebra gI, Gamma::Algebra gO, const std::string &opPairs, const std::string &name) {
-                    group.push_back(make_weaknoneye_deriv(application, qbl, ql, qbr, qr, gI, gO, opPairs, {deriv("none", "", "")}, gauge_tau, flowPar.bc, name));
+                    group.push_back(make_weaknoneye_deriv(application, qbl, ql, qbr, qr, gI, gO, opPairs, {deriv("none", "", "")}, gauges.light, flowPar.bc, name));
                 };
                 for (auto &gIn : probes) {
                     for (auto &gOut : probes) {
@@ -374,18 +427,22 @@ int main(int argc, char *argv[])
                     }
                 }
 
-                // two-quark HQE 3pts: flowed heavy legs, unflowed spectator, sink noise of wall t_f
+                // two-quark HQE 3pts: flowed heavy legs, unflowed spectator. The heavy quark runs t_i -> x -> t_f (as in
+                // DeltaHs0_T1): the module's sink is wall t_i and its source wall t_f, with the spectator from t_f closed at t_i
                 if (hqePar.twoQuark && (!tau0 || hqePar.atTau0)) {
-                    group.push_back(make_hm3pt(application, pre+"HQE"+suf, gauge_tau, flowPar.bc, tau, hi, hf, wi.q.at(f), wf.gsrc, wf.t, triads));
+                    group.push_back(make_hm3pt(application, pre+"HQE"+suf, gauges.heavy, flowPar.bc, tau, hf, hi, wf.q.at(f), wi.gsrc, wi.t, triads));
                 }
 
-                // dim-7 DeltaB=2: DeltaHs2 legs with the Beneke-Buchalla-Dunietz derivative specifications, one module per probe pair
+                // dim-7 DeltaB=2: DeltaHs2 legs with the Beneke-Buchalla-Dunietz derivative specifications, one module per probe pair.
+                // The legs are (qBarLeft, qLeft, qBarRight, qRight) = (h_i, q_i, q_f, h_f), heavy legs derived on gauges.heavy
                 if (hqePar.dim7 && (!tau0 || hqePar.atTau0)) {
+                    const std::vector<std::string> legGauges = (gauges.heavy == gauges.light) ? std::vector<std::string>{}
+                        : std::vector<std::string>{gauges.heavy, "", "", gauges.heavy};
                     for (auto &gIn : probes) {
                         for (auto &gOut : probes) {
                             Gamma::Algebra gI = strToVec<Gamma::Algebra>(gIn)[0], gO = strToVec<Gamma::Algebra>(gOut)[0];
                             const std::string g = "_" + probeTag(gIn) + "_" + probeTag(gOut);
-                            group.push_back(make_weaknoneye_deriv(application, hi, qi, qf, hf, gI, gO, gammaPairs, dim7Specs(), gauge_tau, flowPar.bc, pre+"DeltaHs2_dim7"+g+suf));
+                            group.push_back(make_weaknoneye_deriv(application, hi, qi, qf, hf, gI, gO, gammaPairs, dim7Specs(), gauges.light, flowPar.bc, pre+"DeltaHs2_dim7"+g+suf, legGauges));
                         }
                     }
                 }
@@ -394,16 +451,21 @@ int main(int argc, char *argv[])
 
         // dim-6 DeltaB=0 eyes and condensates
         if (eyes) {
-            make_eyes(application, noise, walls, pairs, spectators, probes, vectors, label, gauge_tau, tau0, xmlPar.stochasticPar.c_fl, eyePairs, group);
+            make_eyes(application, noise, walls, pairs, spectators, probes, vectors, label, gauges.light, tau0, xmlPar.stochasticPar.c_fl, eyePairs, group);
         }
     };
 
     //////////////////////////////////////
     //  Contract at zero flow time ///////
     //////////////////////////////////////
+    // with stout heavy flow the two-quark vertices at zero flow time use Vgauge, the links of the heavy action
+    const FlowGauges gauge0 = {"trans_gauge", stoutFlow ? "Vgauge" : "trans_gauge"};
     const std::string label0 = tauLabel(0, flowPar.step_size);
     step0.push_back(make_wilsonflow0(application, "WilsonFlow_t"+label0, "trans_gauge", flowPar));
-    contract(label0, "trans_gauge", 0., true, step0);
+    if (stoutFlow) {
+        step0.push_back(make_wilsonflow0(application, "WilsonFlowV_t"+label0, "Vgauge", flowPar));
+    }
+    contract(label0, gauge0, 0., true, step0);
 
     // make a single group for all contractions at one flow time
     std::vector<std::string> corrgroups = {make_corrgroup(application, "FlowTime_t"+label0, step0)};
@@ -411,19 +473,19 @@ int main(int argc, char *argv[])
     /////////////////////////////////////////
     // Contract for each flow time step /////
     /////////////////////////////////////////
-    // walls (and, with eyes, the noise and solutions) are flowed together
-    std::vector<std::string> flowFields = {};
+    // walls (and, with eyes, the noise and solutions) are flowed together; the heavy walls from gauge0.heavy
+    std::vector<std::string> heavyFields = {}, lightFields = {};
     for (auto &w : walls) {
         for (auto &f : flavs) {
-            flowFields.push_back(w.q[f]);
+            (f == "b" ? heavyFields : lightFields).push_back(w.q[f]);
         }
     }
     if (eyes) {
         std::vector<std::string> eyeFields = eye_flow_fields(noise);
-        flowFields.insert(flowFields.end(), eyeFields.begin(), eyeFields.end());
+        lightFields.insert(lightFields.end(), eyeFields.begin(), eyeFields.end());
     }
-    std::vector<std::string> flowGroups = make_flow_chain(application, flowPar, chaining, "trans_gauge", flowFields,
-        [&](const std::string &label, const std::string &gauge_tau, double tau, std::vector<std::string> &group) {
+    std::vector<std::string> flowGroups = make_flow_chain(application, flowPar, chaining, gauge0, lightFields, heavyFields,
+        [&](const std::string &label, const FlowGauges &gauge_tau, double tau, std::vector<std::string> &group) {
             contract(label, gauge_tau, tau, false, group);
         });
     corrgroups.insert(corrgroups.end(), flowGroups.begin(), flowGroups.end());

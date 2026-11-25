@@ -4,7 +4,7 @@
      Must match the saving run: configPar, the quark names (wall files are <wallStem>/<quark>_<t>.<traj>.bin, wall sources
      <wallStem>/src_<t>.<traj>.bin), flowPar, mesonPar.light and runPar.wallStem/wallIo32. runId only seeds the loop noise:
      use a new runId for more noise hits.
-     Output: <mesonPar.file_name>_<runId>; application database <appDb stem>_eyes.db. stoutPar and smearPar are not read. -->
+     Output: <mesonPar.file_name>_<runId>; application database <appDb stem>_eyes.db. smearPar is not read; stoutPar only with flowPar.heavyLinks = stout. -->
 <grid>
     <runPar>
         <runId>test</runId>               <!-- seeds the loop noise and names the output; the saving run's runId gives the noise of runPar.eyes = 1 there -->
@@ -16,6 +16,9 @@
         <saveWalls>0</saveWalls>          <!-- not used by FermionFlow_Eyes -->
         <wallStem>walls</wallStem>        <!-- directory of the saved wall propagators -->
         <wallIo32>1</wallIo32>            <!-- as when the walls were saved -->
+        <loadSrcs>0</loadSrcs>           <!-- 1: load the wall sources src_<t> (and z2_<t> if smeared) from srcStem, e.g. saved by HeavyMassScan -->
+        <srcStem>props</srcStem>         <!-- directory of the saved wall sources -->
+        <propIo32>1</propIo32>           <!-- 1: the propagators of <quark>Par.prop and the sources of srcStem are in single precision -->
     </runPar>
     <configPar>
         <fileStem>/path/to/ckpoint_lat</fileStem>
@@ -32,7 +35,7 @@
         </deltaTs>
         <Tmax>64</Tmax>
     </configPar>
-    <hdwfPar> <!-- only the quark name is used (wall file names) -->
+    <hdwfPar> <!-- only the quark name and prop are used (wall file names) -->
         <quark>b</quark>
         <mass>0.45</mass>
         <Ls>12</Ls>
@@ -43,29 +46,33 @@
         <maxiter>100000</maxiter>
         <maxiterIn>100000</maxiterIn>
         <maxiterOut>10</maxiterOut>
-        <prop>none</prop>
+        <prop>none</prop>               <!-- none: <wallStem>/<quark>_<t>; else <prop>_<t>, e.g. saved by HeavyMassScan -->
     </hdwfPar>
     <sdwfPar> <!-- wall file names, and the strange loop solves -->
         <quark>s</quark>
         <mass>0.02477</mass>
         <Ls>16</Ls>
         <M5>1.8</M5>
+        <b>1.5</b>                      <!-- Moebius: placeholder, set to the ensemble -->
+        <c>0.5</c>
         <residual>1.0e-08</residual>
         <maxiter>10000</maxiter>
         <maxiterIn>100000</maxiterIn>
         <maxiterOut>10</maxiterOut>
-        <prop>none</prop>
+        <prop>none</prop>               <!-- none: <wallStem>/<quark>_<t>; else <prop>_<t>, e.g. saved by HeavyMassScan -->
     </sdwfPar>
     <ldwfPar> <!-- wall file names, and the light loop solves; placeholder values: set the light-quark parameters of the ensemble -->
         <quark>l</quark>
         <mass>0.005</mass>
         <Ls>16</Ls>
         <M5>1.8</M5>
+        <b>1.5</b>                      <!-- Moebius: placeholder, set to the ensemble -->
+        <c>0.5</c>
         <residual>1.0e-08</residual>
         <maxiter>10000</maxiter>
         <maxiterIn>100000</maxiterIn>
         <maxiterOut>10</maxiterOut>
-        <prop>none</prop>
+        <prop>none</prop>               <!-- none: <wallStem>/<quark>_<t>; else <prop>_<t>, e.g. saved by HeavyMassScan -->
     </ldwfPar>
     <mesonPar> <!-- only file_name and light are used -->
         <file_name>ApplicationTest</file_name>
@@ -87,7 +94,13 @@
         <Tcoarsen>9.01</Tcoarsen>
         <maxTau></maxTau>
         <bc>-1</bc>
+        <heavyLinks>thin</heavyLinks>     <!-- heavy walls flowed from: thin (trans_gauge, as every other field) or stout (Vgauge, stoutPar; two-quark vertices on the stout chain) -->
     </flowPar>
+    <stoutPar> <!-- read only if flowPar.heavyLinks = stout: as in the saving run -->
+        <steps>3</steps>
+        <rho>0.1</rho>
+        <orthog></orthog>
+    </stoutPar>
     <hqePar> <!-- only probeGammas and vectorGammas are used (source and sink of the eyes) -->
         <probeGammas>Gamma5</probeGammas> <!-- Gamma5 and/or GammaTGamma5 -->
         <vectorGammas>none</vectorGammas> <!-- B* eyes: none, or a subset of GammaX GammaY GammaZ -->
@@ -95,6 +108,7 @@
         <vertices></vertices>
         <dim7>false</dim7>
         <gammaPairs></gammaPairs>
+        <deltaB0Pairs></deltaB0Pairs>
         <topology2>false</topology2>
         <atTau0>true</atTau0>
     </hqePar>
@@ -102,6 +116,6 @@
         <nSrcs>1</nSrcs>
         <nsparse>2</nsparse>              <!-- nSrcs*nsparse^4 noise components, one 12-column solve each per loop flavour -->
         <c_fl>0.0</c_fl>                  <!-- scalar condensate improvement; 0 for DWF -->
-        <eyeGammaPairs>all</eyeGammaPairs> <!-- WeakEye3pt gamma pairs: diag, all, or "(G1 G2)..."; all for the penguin-type operators -->
+        <eyeGammaPairs>hqe</eyeGammaPairs> <!-- WeakEye3pt gamma pairs: empty or hqe = diag + the 16 off-diagonal pairs of the vector-class penguins (32); diag, all, or "(G1 G2)..." -->
     </stochasticPar>
 </grid>

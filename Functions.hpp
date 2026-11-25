@@ -8,6 +8,7 @@
 #include <functional>
 #include <iomanip>
 #include <map>
+#include <set>
 
 using namespace Grid;
 using namespace Hadrons;
@@ -106,6 +107,12 @@ std::string parse_vectors(const std::string &vectorGammas, std::vector<std::stri
     return "";
 }
 
+// name of the adjoint of a wall gamma: GammaTGamma5 is anti-Hermitian, the other wall gammas (Gamma5, GammaX/Y/Z) are Hermitian
+std::string adjName(const std::string &gamma) {
+    if (gamma == "GammaTGamma5") return "MinusGammaTGamma5";
+    return gamma;
+}
+
 // ****************************
 // ******* FLOW TIMES *********
 // ****************************
@@ -149,87 +156,6 @@ std::vector<int> measuredSteps(const XmlInputs::FlowPar &flowPar) {
 // ****************************
 // ******* PROPAGATORS ********
 // ****************************
-
-// dwf propagator 
-std::string make_dwfpropagator(Application &application, XmlInputs::DwfPar &dwfPar, std::string src, int i, std::string boundary, std::string twist, std::string gauge, std::string add){
-    std::string solve_name = "CG_" + dwfPar.quark;
-    if (i == 0) {
-        // action
-        MAction::DWF::Par actionPar;
-        actionPar.gauge    = gauge; 
-        actionPar.Ls       = dwfPar.Ls;
-        actionPar.M5       = dwfPar.M5;
-        actionPar.mass     = dwfPar.mass;
-        actionPar.boundary = boundary;
-        actionPar.twist    = twist;
-
-        std::string act_name = "DWF_action_" + dwfPar.quark + add;
-        application.createModule<MAction::DWF>(act_name, actionPar);
-
-        // solver
-        MSolver::RBPrecCG::Par solverPar;
-        solverPar.action       = act_name;
-        solverPar.residual     = dwfPar.residual;
-        solverPar.maxIteration = dwfPar.maxiter;
-
-        application.createModule<MSolver::RBPrecCG>(solve_name,solverPar);
-    }
-
-    // generate propagator
-    MFermion::GaugeProp::Par quarkPar;
-    quarkPar.solver = solve_name;
-    quarkPar.source = src;
-
-    std::string prop_name = dwfPar.quark + add;
-    application.createModule<MFermion::GaugeProp>(prop_name, quarkPar);
-    return prop_name;
-}
-
-std::string make_mixeddwfpropagator(Application &application, XmlInputs::DwfPar &dwfPar, std::string src, int i, std::string boundary, std::string twist, std::string gauge, std::string Fgauge, std::string add){
-    std::string solve_name = "MixedCGm_" + dwfPar.quark;
-    if (i == 0) {
-        MAction::DWFF::Par FactionPar;
-        FactionPar.gauge    = Fgauge;
-        FactionPar.Ls       = dwfPar.Ls;
-        FactionPar.M5       = dwfPar.M5;
-        FactionPar.mass     = dwfPar.mass;
-        FactionPar.boundary = boundary;
-        FactionPar.twist    = twist;
-
-        std::string Fact_name = "DWFF_action_" + dwfPar.quark + add;
-        application.createModule<MAction::DWFF>(Fact_name, FactionPar);
-
-        MAction::DWF::Par actionPar;
-        actionPar.gauge    = gauge;
-        actionPar.Ls       = dwfPar.Ls;
-        actionPar.M5       = dwfPar.M5;
-        actionPar.mass     = dwfPar.mass;
-        actionPar.boundary = boundary;
-        actionPar.twist    = twist;
-
-        std::string act_name = "DWF_action_" + dwfPar.quark + add;
-        application.createModule<MAction::DWF>(act_name, actionPar);
-
-        // solver
-        MSolver::MixedPrecisionRBPrecCG::Par solverPar;
-        solverPar.innerAction       = Fact_name;
-        solverPar.outerAction       = act_name;
-        solverPar.maxInnerIteration = dwfPar.maxiterIn;
-        solverPar.maxOuterIteration = dwfPar.maxiterOut;
-        solverPar.residual          = dwfPar.residual;
-
-        application.createModule<MSolver::MixedPrecisionRBPrecCG>(solve_name, solverPar);
-    }
-    
-    // generate propagator
-    MFermion::GaugeProp::Par quarkPar;
-    quarkPar.solver = solve_name;
-    quarkPar.source = src;
-
-    std::string prop_name = dwfPar.quark + add;
-    application.createModule<MFermion::GaugeProp>(prop_name, quarkPar);
-    return prop_name;
-}
 
 std::string make_moebiusdwfpropagator(Application &application, XmlInputs::MdwfPar &dwfPar, std::string src, int i, std::string boundary, std::string twist, std::string gauge, std::string add){
     std::string solve_name = "CGm_" + dwfPar.quark;
@@ -351,18 +277,52 @@ std::string make_wilsonflow0(Application &application, std::string name, std::st
 
 std::string make_corrgroup(Application &application, std::string name, std::vector<std::string> contractions);
 
-// contractions at one measured flow time: (flow-time label, flowed gauge field, flow time, result group)
-typedef std::function<void(const std::string &, const std::string &, double, std::vector<std::string> &)> FlowContraction;
+// true if flowPar.heavyLinks selects the stout links (Vgauge) for the heavy flow; returns an error message in err, empty on success.
+// thin (or empty): every flavour is flowed from trans_gauge. stout: the heavy walls are flowed from Vgauge, the links of the
+// heavy action, and the light/strange walls and the eye noise from trans_gauge (HQE_lattice_analysis.tex, `Smeared heavy links')
+bool stoutHeavyFlow(const XmlInputs::FlowPar &flowPar, std::string &err) {
+    err = "";
+    if (flowPar.heavyLinks.empty() || flowPar.heavyLinks == "thin") return false;
+    if (flowPar.heavyLinks == "stout") return true;
+    err = "flowPar.heavyLinks must be 'thin' or 'stout'";
+    return false;
+}
 
-// flow fields from gauge along the flow steps and contract at the measured steps; returns one result group per FermionFlow module.
-// The flowed fields at step n are <field>_t<label(n)>, the flowed gauge field <WilsonFlow_t<label(n)>>_U.
+// gauge fields at one flow time: light the flow of the light/strange quarks and the eye noise, heavy that of the heavy walls
+// (the same field unless flowPar.heavyLinks = stout)
+struct FlowGauges
+{
+    std::string light, heavy;
+};
+
+// contractions at one measured flow time: (flow-time label, flowed gauge fields, flow time, result group)
+typedef std::function<void(const std::string &, const FlowGauges &, double, std::vector<std::string> &)> FlowContraction;
+
+// flow fields along the flow steps and contract at the measured steps; returns one result group per flow time.
+// lightFields are flowed from gauge.light, heavyFields from gauge.heavy: with one gauge field all are flowed by one FermionFlow
+// module per step, WilsonFlow_t<label(n)>; with two, the heavy fields by a second one, WilsonFlowV_t<label(n)>, whose gauge
+// observables (of the flowed stout links) are written to the same group.
+// The flowed fields at step n are <field>_t<label(n)>, the flowed gauge fields <module>_U.
 // chaining = "step":     one FermionFlow module per step
 //          = "interval": one FermionFlow module per measured step, covering the steps since the last one
-std::vector<std::string> make_flow_chain(Application &application, XmlInputs::FlowPar &flowPar, const std::string &chaining, const std::string &gauge, const std::vector<std::string> &fields, const FlowContraction &contract) {
+std::vector<std::string> make_flow_chain(Application &application, XmlInputs::FlowPar &flowPar, const std::string &chaining, const FlowGauges &gauge, const std::vector<std::string> &lightFields, const std::vector<std::string> &heavyFields, const FlowContraction &contract) {
+    struct Chain
+    {
+        std::string prefix;
+        std::vector<std::string> props;
+        std::string gauge;
+    };
+    std::vector<Chain> chains;
+    if (gauge.heavy == gauge.light) {
+        std::vector<std::string> fields = heavyFields;
+        fields.insert(fields.end(), lightFields.begin(), lightFields.end());
+        chains = {{"WilsonFlow_t", fields, gauge.light}};
+    } else {
+        chains = {{"WilsonFlow_t", lightFields, gauge.light}, {"WilsonFlowV_t", heavyFields, gauge.heavy}};
+    }
+
     std::vector<std::string> groups;
     std::vector<int> measured = measuredSteps(flowPar);
-    std::vector<std::string> prevProps = fields;
-    std::string prevGauge = gauge;
     int prevStep = 0;
 
     for (int n = 1; n <= flowPar.steps; n++) {
@@ -370,26 +330,30 @@ std::vector<std::string> make_flow_chain(Application &application, XmlInputs::Fl
         if (chaining == "interval" && !meas) continue;
 
         const std::string label = tauLabel(n, flowPar.step_size);
-        const std::string flowName = "WilsonFlow_t" + label;
-        std::vector<std::string> outProps = {};
-        for (auto &f : fields) {
-            outProps.push_back(f + "_t" + label);
-        }
 
         // flowed fields and gauge observables; <flowName>_U is the flowed gauge field at this step
-        std::vector<std::string> stepi = {make_fermionflow(application, flowName, prevGauge, prevProps, outProps, n - prevStep, flowPar)};
+        std::vector<std::string> stepi = {};
+        for (auto &c : chains) {
+            const std::string flowName = c.prefix + label;
+            std::vector<std::string> outProps = {};
+            for (auto &f : c.props) {
+                outProps.push_back(f + "_t" + label);
+            }
+            stepi.push_back(make_fermionflow(application, flowName, c.gauge, c.props, outProps, n - prevStep, flowPar));
+            c.props = outProps;
+            c.gauge = flowName + "_U";
+        }
 
         // only perform contractions for the measured steps (always includes the final flow time)
         if (meas) {
-            contract(label, flowName + "_U", flowPar.step_size*n, stepi);
+            FlowGauges gauge_tau = {chains[0].gauge, chains.back().gauge};
+            contract(label, gauge_tau, flowPar.step_size*n, stepi);
         }
 
         // make a single group for all contractions at one flow time
         groups.push_back(make_corrgroup(application, "FlowTime_t" + label, stepi));
 
-        prevProps = outProps;
-        prevGauge = flowName + "_U";
-        prevStep  = n;
+        prevStep = n;
     }
     return groups;
 }
@@ -498,12 +462,12 @@ std::string make_save_field(Application &application, const std::string &field, 
     return name;
 }
 
-// load a field saved by make_save_field; the loaded field is called field
-std::string make_load_field(Application &application, const std::string &field, const std::string &file, const std::string &wallStem, bool io32) {
+// load a 4D PropagatorField from <fileStem>.<traj>.bin; the loaded field is called field
+std::string load_field(Application &application, const std::string &field, const std::string &fileStem, bool io32) {
     MIO::LoadPropagator::Par loadPar;
     loadPar.name     = field;
     loadPar.Ls       = 1;
-    loadPar.fileStem = wall_file(wallStem, file);
+    loadPar.fileStem = fileStem;
     std::string name = "load_" + field;
     if (io32) {
         application.createModule<MIO::LoadPropagatorIo32>(name, loadPar);
@@ -511,6 +475,11 @@ std::string make_load_field(Application &application, const std::string &field, 
         application.createModule<MIO::LoadPropagator>(name, loadPar);
     }
     return field;
+}
+
+// load a field saved by make_save_field; the loaded field is called field
+std::string make_load_field(Application &application, const std::string &field, const std::string &file, const std::string &wallStem, bool io32) {
+    return load_field(application, field, wall_file(wallStem, file), io32);
 }
 
 // save an (unflowed) wall propagator to <wallStem>/<prop>.<traj>.bin
@@ -521,6 +490,41 @@ std::string make_save_wall(Application &application, const std::string &prop, co
 // load a wall propagator saved by make_save_wall; the loaded field is called prop
 std::string make_load_wall(Application &application, const std::string &prop, const std::string &wallStem, bool io32) {
     return make_load_field(application, prop, prop, wallStem, io32);
+}
+
+// true if the propagators of a flavour with <quark>Par.prop = prop are loaded instead of solved
+bool loaded(const std::string &prop) {
+    return prop != "none";
+}
+
+// checks <quark>Par.prop: "none" or a file stem; returns an error message, empty on success
+std::string check_prop(const std::string &par, const std::string &prop) {
+    if (prop.empty()) {
+        return par + ".prop must be 'none' (solve) or the file stem of saved propagators";
+    }
+    return "";
+}
+
+// load the propagator of wall t saved as <prop>_<t>.<traj>.bin (e.g. by HeavyMassScan); the loaded field is called name
+std::string make_load_prop(Application &application, const std::string &name, const std::string &prop, int t, bool io32) {
+    return load_field(application, name, prop + "_" + std::to_string(t), io32);
+}
+
+// file name of the saved Z2 source of wall t (the heavy quark source), saved by HeavyMassScan if the light/strange
+// source is smeared (else it is src_<t>)
+std::string wall_z2(int t) {
+    return "z2_" + std::to_string(t);
+}
+
+// wall at time t with its sources loaded from <srcStem>: src_<t> and, if smear, z2_<t> (else z2 = src_<t>); no propagators.
+// Replaces make_wall, so the sources do not depend on the runId seed of the run that saved them.
+Wall load_wall(Application &application, int t, bool smear, const std::string &srcStem, bool io32) {
+    Wall w;
+    w.t    = t;
+    w.tag  = std::to_string(t);
+    w.gsrc = make_load_field(application, wall_source(t), wall_source(t), srcStem, io32);
+    w.z2   = smear ? make_load_field(application, wall_z2(t), wall_z2(t), srcStem, io32) : w.gsrc;
+    return w;
 }
 
 // ****************************
@@ -589,7 +593,9 @@ std::string make_wardid(Application &application, std::string prop, std::string 
     return name;
 }
 
-// HeavyMeson3pt: two-quark (HQE) 3pts, zero momentum
+// HeavyMeson3pt: two-quark (HQE) 3pts, zero momentum.
+// The module's heavy line runs (qSnk wall) -> x -> (qSrc wall): for the meson with the heavy quark going t_i -> t_f
+// pass qSrc = heavy from t_f, qSnk = heavy from t_i, spectator = light from t_f, sinkNoise = source of wall t_i, tSnk = t_i
 std::string make_hm3pt(Application &application, std::string name, std::string gauge, int bc, double flowTime, std::string qSrc, std::string qSnk, std::string spectator, std::string sinkNoise, unsigned int tSnk, std::vector<std::string> triads) {
     MContraction::HeavyMeson3pt::Par hmPar;
     hmPar.gauge     = gauge;
@@ -634,9 +640,10 @@ std::vector<MContraction::WeakDerivSpec> dim7Specs(void) {
         deriv("qBarRight qRight", "0 1 2", "none"),
         deriv("qBarLeft qBarRight", "3", "none"),             // D
         deriv("qBarLeft qBarRight", "0 1 2", "none"),
-        // R_4, R~_4: D_mu on s, gamma_mu in the other bilinear. With s = qLeft, G1 sits in the s bilinear in
-        // trace 2 (R_4: couple G2) and in the other bilinear in trace 1 (R~_4: couple G1); with s = qBarRight
-        // the other way round. Each spec's other trace is a Fierz partner.
+        // R_4: D_mu on s, gamma_mu in the other bilinear. Trace 2 is the same-wall Wick contraction of the
+        // colour-singlet operator, trace 1 its cross contraction (not R~). With s = qLeft, G1 sits in the s
+        // bilinear in trace 2 (couple G2) and in the other bilinear in trace 1 (couple G1); with s = qBarRight
+        // the other way round. The remaining traces are the spin-Fierz partners that R~_4 needs.
         deriv("qLeft", "0 1 2 3", "G2"),
         deriv("qLeft", "0 1 2 3", "G1"),
         deriv("qBarRight", "0 1 2 3", "G1"),
@@ -671,8 +678,9 @@ std::string gamma_pairs(const std::string &pairs) {
     return list;
 }
 
-// WeakNonEye3ptDeriv: four-quark 3pts with gamma pairs and derivatives on the legs, zero momentum
-std::string make_weaknoneye_deriv(Application &application, std::string qbl, std::string ql, std::string qbr, std::string qr, Gamma::Algebra gIn, Gamma::Algebra gOut, std::string gammaPairs, std::vector<MContraction::WeakDerivSpec> specs, std::string gauge, int bc, std::string name) {
+// WeakNonEye3ptDeriv: four-quark 3pts with gamma pairs and derivatives on the legs, zero momentum.
+// legGauges: empty (every leg derived on gauge) or the gauge fields of qBarLeft qLeft qBarRight qRight, empty entry = gauge
+std::string make_weaknoneye_deriv(Application &application, std::string qbl, std::string ql, std::string qbr, std::string qr, Gamma::Algebra gIn, Gamma::Algebra gOut, std::string gammaPairs, std::vector<MContraction::WeakDerivSpec> specs, std::string gauge, int bc, std::string name, std::vector<std::string> legGauges = {}) {
     MContraction::WeakNonEye3ptDeriv::Par weakPar;
     weakPar.qBarLeft    = qbl;
     weakPar.qLeft       = ql;
@@ -683,6 +691,7 @@ std::string make_weaknoneye_deriv(Application &application, std::string qbl, std
     weakPar.gammaPairs  = gammaPairs;
     weakPar.derivatives = specs;
     weakPar.gauge       = gauge;
+    weakPar.legGauges   = legGauges;
     weakPar.bc          = bc;
     application.createModule<MContraction::WeakNonEye3ptDeriv>(name, weakPar);
     return name;
@@ -737,16 +746,16 @@ std::vector<std::string> make_stochastic_noise_diluted(Application &application,
     return sources;
 }
 
-// noise and one solve per component and loop flavour (DWF, mixed precision, as the wall propagators).
-// newSolvers: create the actions and solvers (false if the wall propagators already created them)
-EyeNoise make_eye_noise(Application &application, XmlInputs::StochasticPar &stochPar, std::map<std::string, XmlInputs::DwfPar *> dwfPars, bool newSolvers, std::string boundary, std::string twist, std::string gauge, std::string gaugeF) {
+// noise and one solve per component and loop flavour (Moebius DWF, mixed precision, as the wall propagators).
+// newSolvers: the loop flavours whose actions and solvers are created here (not those the solved wall propagators created)
+EyeNoise make_eye_noise(Application &application, XmlInputs::StochasticPar &stochPar, std::map<std::string, XmlInputs::MdwfPar *> dwfPars, std::set<std::string> newSolvers, std::string boundary, std::string twist, std::string gauge, std::string gaugeF) {
     EyeNoise noise;
     noise.nSrcs = stochPar.nSrcs;
     noise.eta   = make_stochastic_noise_diluted(application, "eta", stochPar.nSrcs, stochPar.nsparse);
     for (auto &fp : dwfPars) {
         for (unsigned int k = 0; k < noise.eta.size(); k++) {
-            int j = (newSolvers && k == 0) ? 0 : 1;
-            noise.phi[fp.first].push_back(make_mixeddwfpropagator(application, *fp.second, noise.eta[k], j, boundary, twist, gauge, gaugeF, "_stoch_" + std::to_string(k)));
+            int j = (newSolvers.count(fp.first) && k == 0) ? 0 : 1;
+            noise.phi[fp.first].push_back(make_mixedmoebiusdwfpropagator(application, *fp.second, noise.eta[k], j, boundary, twist, gauge, gaugeF, "_stoch_" + std::to_string(k)));
         }
     }
     return noise;
@@ -802,28 +811,29 @@ std::string make_linearcomb(Application &application, const std::string &name, c
     return name;
 }
 
-// spectator f from wall t_i closed at wall t_f against adj(sink noise of t_f) (SlicedPropagator)
-std::string eye_spectator(const Wall &wi, const Wall &wf, const std::string &f) {
-    return f + "_t" + wi.tag + "_snk" + wf.tag;
+// spectator f from wall "from" closed at wall "at" against adj(source of wall "at") (SlicedPropagator)
+std::string eye_spectator(const Wall &from, const Wall &at, const std::string &f) {
+    return f + "_t" + from.tag + "_snk" + at.tag;
 }
 
-// eye spectators for every wall pair and spectator flavour, from the unflowed spectator propagators; flow-time independent
+// eye spectators for every wall pair and spectator flavour, from the unflowed spectator propagators; flow-time independent.
+// The spectator runs t_f -> t_i (closed at t_i), so that the heavy line is a quark going t_i -> x -> t_f as in DeltaHs0_T1.
 void make_eye_spectators(Application &application, const std::vector<Wall> &walls, const std::vector<WallPair> &pairs, const std::vector<std::string> &spectators) {
     auto &vm = VirtualMachine::getInstance();
     for (auto &p : pairs) {
         const Wall &wi = walls[p.i], &wf = walls[p.f];
-        const std::string sink = "adjsnk_" + wf.gsrc;
+        const std::string sink = "adjsnk_" + wi.gsrc;
         if (!vm.hasModule(sink)) {
             MSink::SourceSink::Par sinkPar;
-            sinkPar.source   = wf.gsrc;
+            sinkPar.source   = wi.gsrc;
             sinkPar.sourceOp = "adj";
             application.createModule<MSink::SourceSink>(sink, sinkPar);
         }
         for (auto &f : spectators) {
-            const std::string name = eye_spectator(wi, wf, f);
+            const std::string name = eye_spectator(wf, wi, f);
             if (!vm.hasModule(name)) {
                 MSink::Smear::Par smearPar;
-                smearPar.q    = wi.q.at(f);
+                smearPar.q    = wf.q.at(f);
                 smearPar.sink = sink;
                 application.createModule<MSink::Smear>(name, smearPar);
             }
@@ -837,6 +847,10 @@ void make_eye_spectators(Application &application, const std::vector<Wall> &wall
 //   condensate_<g>_stoch_<k>_t<label>, dslash_condensate_<g>_stoch_<k>_t<label>     (as in SParameterGF)
 //   <f>h_DeltaHs0_eye_<g>_<G>_<G>_t<t_i>_dt<dT>_<label>                             (WeakEye3pt, loop flavour g, gamma pairs gammaPairs)
 // <G>_<G> runs over every pair of probes (pseudoscalar walls) and over the diagonal B* walls <V>_<V> (vectors).
+// Orientation and interpolators are those of DeltaHs0_T1: heavy quark t_i -> x -> t_f, adj(<first G>) at t_i and <second G> at t_f.
+// WeakEye3pt has gammaOut at the wall of qBarRight (t_i here) and adj(gammaIn) at the wall of qBarLeft (t_f), so it gets
+// gammaIn = adj(<second G>), gammaOut = adj(<first G>): the result metadata {in, out} are these module values
+// (four-quark-combination.tex).
 void make_eyes(Application &application, const EyeNoise &noise, const std::vector<Wall> &walls, const std::vector<WallPair> &pairs, const std::vector<std::string> &spectators, const std::vector<std::string> &probes, const std::vector<std::string> &vectors, const std::string &label, const std::string &gauge, bool tau0, double c_fl, const std::string &gammaPairs, std::vector<std::string> &group) {
     auto at = [&](const std::string &field) {
         return tau0 ? field : field + "_t" + label;
@@ -873,14 +887,14 @@ void make_eyes(Application &application, const EyeNoise &noise, const std::vecto
                     for (auto &gOut : probes) {
                         Gamma::Algebra gI = strToVec<Gamma::Algebra>(gIn)[0], gO = strToVec<Gamma::Algebra>(gOut)[0];
                         const std::string g = "_" + probeTag(gIn) + "_" + probeTag(gOut);
-                        group.push_back(make_weakeye(application, hi, hf, eye_spectator(wi, wf, f), gl.second, wf.t, gI, gO, gammaPairs, "", f + "h_DeltaHs0_eye_" + gl.first + g + suf));
+                        group.push_back(make_weakeye(application, hf, hi, eye_spectator(wf, wi, f), gl.second, wi.t, Gamma::adj[gO], Gamma::adj[gI], gammaPairs, "", f + "h_DeltaHs0_eye_" + gl.first + g + suf));
                     }
                 }
                 // B*, diagonal in the polarisation
                 for (auto &gV : vectors) {
                     Gamma::Algebra gG = strToVec<Gamma::Algebra>(gV)[0];
                     const std::string g = "_" + vectorTag(gV) + "_" + vectorTag(gV);
-                    group.push_back(make_weakeye(application, hi, hf, eye_spectator(wi, wf, f), gl.second, wf.t, gG, gG, gammaPairs, "", f + "h_DeltaHs0_eye_" + gl.first + g + suf));
+                    group.push_back(make_weakeye(application, hf, hi, eye_spectator(wf, wi, f), gl.second, wi.t, Gamma::adj[gG], Gamma::adj[gG], gammaPairs, "", f + "h_DeltaHs0_eye_" + gl.first + g + suf));
                 }
             }
         }

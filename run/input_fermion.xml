@@ -13,6 +13,9 @@
         <saveWalls>1</saveWalls>          <!-- 1: save the unflowed wall propagators for FermionFlow_Eyes -->
         <wallStem>walls</wallStem>        <!-- directory of the saved wall propagators -->
         <wallIo32>1</wallIo32>            <!-- 1: wall propagators on disk in single precision -->
+        <loadSrcs>0</loadSrcs>           <!-- 1: load the wall sources src_<t> (and z2_<t> if smeared) from srcStem, e.g. saved by HeavyMassScan -->
+        <srcStem>props</srcStem>         <!-- directory of the saved wall sources -->
+        <propIo32>1</propIo32>           <!-- 1: the propagators of <quark>Par.prop and the sources of srcStem are in single precision -->
     </runPar>
     <configPar>
         <fileStem>/path/to/ckpoint_lat</fileStem> 
@@ -40,29 +43,33 @@
         <maxiter>100000</maxiter>
         <maxiterIn>100000</maxiterIn>
         <maxiterOut>10</maxiterOut>
-        <prop>none</prop>
+        <prop>none</prop>               <!-- none: solve; else load <prop>_<t>.<traj>.bin, e.g. props/b0.45 saved by HeavyMassScan -->
     </hdwfPar>
     <sdwfPar>
         <quark>s</quark>
         <mass>0.02477</mass>
         <Ls>16</Ls>
         <M5>1.8</M5>
+        <b>1.5</b>                      <!-- Moebius: placeholder, set to the ensemble -->
+        <c>0.5</c>
         <residual>1.0e-08</residual>
         <maxiter>10000</maxiter>
         <maxiterIn>100000</maxiterIn>
         <maxiterOut>10</maxiterOut>
-        <prop>none</prop>
+        <prop>none</prop>               <!-- none: solve; else load <prop>_<t>.<traj>.bin, e.g. props/s saved by HeavyMassScan -->
     </sdwfPar>
     <ldwfPar> <!-- placeholder values: set the light-quark parameters of the ensemble -->
         <quark>l</quark>
         <mass>0.005</mass>
         <Ls>16</Ls>
         <M5>1.8</M5>
+        <b>1.5</b>                      <!-- Moebius: placeholder, set to the ensemble -->
+        <c>0.5</c>
         <residual>1.0e-08</residual>
         <maxiter>10000</maxiter>
         <maxiterIn>100000</maxiterIn>
         <maxiterOut>10</maxiterOut>
-        <prop>none</prop>
+        <prop>none</prop>               <!-- none: solve; else load <prop>_<t>.<traj>.bin, e.g. props/l saved by HeavyMassScan -->
     </ldwfPar>
     <mesonPar>
         <file_name>ApplicationTest</file_name>
@@ -87,6 +94,7 @@
         <Tcoarsen>9.01</Tcoarsen>
         <maxTau></maxTau>
         <bc>-1</bc>
+        <heavyLinks>thin</heavyLinks>     <!-- heavy walls flowed from: thin (trans_gauge, as every other field) or stout (Vgauge, stoutPar; two-quark vertices on the stout chain) -->
     </flowPar>
     <stoutPar>
         <steps>3</steps>
@@ -106,6 +114,7 @@
         <vertices></vertices>             <!-- empty = "all ops": 16 gammas + HQE operators, incl. the chirality-even g* mixing partners -->
         <dim7>true</dim7>
         <gammaPairs></gammaPairs>         <!-- dim-7 DeltaB=2 (WeakNonEye3ptDeriv) gamma pairs; empty = diag (16 G x G) -->
+        <deltaB0Pairs>hqe</deltaB0Pairs>  <!-- DeltaHs0_T1 operator pairs: empty or hqe = diag + the 16 off-diagonal pairs of the vector-class penguins (32); diag, all, or "(G1 G2)..." -->
         <topology2>false</topology2>     <!-- DeltaHs0_T2 (old topology 2, not B -> B): true only for the round-1 regression -->
         <atTau0>true</atTau0>
     </hqePar>
@@ -113,6 +122,6 @@
         <nSrcs>1</nSrcs>
         <nsparse>2</nsparse>              <!-- nSrcs*nsparse^4 noise components, one 12-column solve each per loop flavour -->
         <c_fl>0.0</c_fl>                  <!-- scalar condensate improvement; 0 for DWF -->
-        <eyeGammaPairs>all</eyeGammaPairs> <!-- WeakEye3pt gamma pairs: diag, all, or "(G1 G2)..."; all for the penguin-type operators -->
+        <eyeGammaPairs>hqe</eyeGammaPairs> <!-- WeakEye3pt gamma pairs: empty or hqe = diag + the 16 off-diagonal pairs of the vector-class penguins (32); diag, all, or "(G1 G2)..." -->
     </stochasticPar>
 </grid>
