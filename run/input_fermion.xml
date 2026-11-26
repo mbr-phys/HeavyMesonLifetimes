@@ -8,21 +8,21 @@
         <appDb>Schedule.db</appDb>
         <restore>false</restore>
         <scheduler>naive</scheduler>
-        <flowChaining>step</flowChaining> <!-- step or interval -->
+        <flowChaining>interval</flowChaining> <!-- step or interval -->
         <eyes>0</eyes>                    <!-- 1: dim-6 DeltaB=0 eyes and condensates (stochasticPar) in this run instead of FermionFlow_Eyes -->
         <saveWalls>1</saveWalls>          <!-- 1: save the unflowed wall propagators for FermionFlow_Eyes -->
-        <wallStem>walls</wallStem>        <!-- directory of the saved wall propagators -->
+        <wallStem>/scratch/project_465003160/HQE/C1/props/</wallStem>        <!-- directory of the saved wall propagators -->
         <wallIo32>1</wallIo32>            <!-- 1: wall propagators on disk in single precision -->
         <loadSrcs>0</loadSrcs>           <!-- 1: load the wall sources src_<t> (and z2_<t> if smeared) from srcStem, e.g. saved by HeavyMassScan -->
-        <srcStem>props</srcStem>         <!-- directory of the saved wall sources -->
-        <propIo32>1</propIo32>           <!-- 1: the propagators of <quark>Par.prop and the sources of srcStem are in single precision -->
+        <srcStem>/scratch/project_465003160/HQE/C1/srcs</srcStem>         <!-- directory of the saved wall sources -->
+        <propIo32>0</propIo32>           <!-- 1: the propagators of <quark>Par.prop and the sources of srcStem are in single precision -->
     </runPar>
     <configPar>
-        <fileStem>/path/to/ckpoint_lat</fileStem> 
-        <begin>280</begin>
-        <end>281</end> <!-- must be gtr than final config to be used -->
+        <fileStem>/scratch/project_465003160/gauge/DWF/C1/ckpoint_lat</fileStem> 
+        <begin>2000</begin>
+        <end>2001</end> <!-- must be gtr than final config to be used -->
         <step>40</step>
-        <source_loc>0 21 23 19</source_loc> 
+        <source_loc>14 17 2 28</source_loc> 
         <sources>
             <elem>0</elem>
             <elem>32</elem>
@@ -33,8 +33,8 @@
         <Tmax>64</Tmax>
     </configPar>
     <hdwfPar>
-        <quark>b</quark>
-        <mass>0.45</mass>
+        <quark>h</quark>
+        <mass>0.64</mass>
         <Ls>12</Ls>
         <M5>1.0</M5>
         <b>1.5</b>
@@ -72,12 +72,12 @@
         <prop>none</prop>               <!-- none: solve; else load <prop>_<t>.<traj>.bin, e.g. props/l saved by HeavyMassScan -->
     </ldwfPar>
     <mesonPar>
-        <file_name>ApplicationTest</file_name>
-        <!-- <gamma_src></gamma_src>
-        <gamma_snk></gamma_snk>-->
+        <file_name>/scratch/project_465003160/HQE/C1/out/LifetimesResults</file_name>
+        <gamma_src></gamma_src>
+        <gamma_snk></gamma_snk>
         <!-- must contain (Gamma5 J) and (GammaTGamma5 J) for every probe J: flowed P and A0 for PCAC and the mass ratios -->
-        <gamma_src>Gamma5 Gamma5 GammaTGamma5 GammaTGamma5 GammaX GammaY GammaZ GammaT</gamma_src>
-        <gamma_snk>Gamma5 GammaTGamma5 Gamma5 GammaTGamma5 GammaX GammaY GammaZ GammaT</gamma_snk>
+        <!-- <gamma_src>Gamma5 Gamma5 GammaTGamma5 GammaTGamma5 GammaX GammaY GammaZ GammaT</gamma_src>
+        <gamma_snk>Gamma5 GammaTGamma5 Gamma5 GammaTGamma5 GammaX GammaY GammaZ GammaT</gamma_snk>-->
         <light>1</light>
         <rhq_impr>no</rhq_impr>
         <n2_min>0</n2_min>
@@ -88,7 +88,7 @@
     <flowPar>
         <output></output>
         <action>Wilson</action>
-        <steps>10</steps>
+        <steps>50</steps>
         <step_size>0.01</step_size>
         <meas_interval>10</meas_interval>
         <Tcoarsen>9.01</Tcoarsen>
@@ -103,13 +103,13 @@
     </stoutPar>
     <smearPar>
         <smear>1</smear>
-        <width>6.5</width>
-        <iterations>100</iterations>
+        <width>4.5</width>
+        <iterations>300</iterations>
         <orthog>3</orthog>
     </smearPar>
     <hqePar>
         <probeGammas>Gamma5</probeGammas> <!-- Gamma5 and/or GammaTGamma5 -->
-        <vectorGammas>none</vectorGammas> <!-- B* 3pts (two-quark, four-quark and, with eyes, the eyes): none, or a subset of GammaX GammaY GammaZ (each needs the 2pt pair (g g)) -->
+        <vectorGammas>GammaX GammaY GammaZ</vectorGammas> <!-- B* 3pts (two-quark, four-quark and, with eyes, the eyes): none, or a subset of GammaX GammaY GammaZ (each needs the 2pt pair (g g)) -->
         <twoQuark>true</twoQuark>
         <vertices></vertices>             <!-- empty = "all ops": 16 gammas + HQE operators, incl. the chirality-even g* mixing partners -->
         <dim7>true</dim7>

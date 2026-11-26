@@ -14,18 +14,18 @@
         <flowChaining>step</flowChaining> <!-- step or interval -->
         <eyes>1</eyes>                    <!-- not used by FermionFlow_Eyes -->
         <saveWalls>0</saveWalls>          <!-- not used by FermionFlow_Eyes -->
-        <wallStem>walls</wallStem>        <!-- directory of the saved wall propagators -->
-        <wallIo32>1</wallIo32>            <!-- as when the walls were saved -->
+        <wallStem>/scratch/project_465003160/HQE/C1/props</wallStem> <!-- directory of the saved wall propagators -->
+        <wallIo32>0</wallIo32>            <!-- as when the walls were saved -->
         <loadSrcs>0</loadSrcs>           <!-- 1: load the wall sources src_<t> (and z2_<t> if smeared) from srcStem, e.g. saved by HeavyMassScan -->
-        <srcStem>props</srcStem>         <!-- directory of the saved wall sources -->
-        <propIo32>1</propIo32>           <!-- 1: the propagators of <quark>Par.prop and the sources of srcStem are in single precision -->
+        <srcStem>/scratch/project_465003160/HQE/C1/srcs</srcStem>         <!-- directory of the saved wall sources -->
+        <propIo32>0</propIo32>           <!-- 1: the propagators of <quark>Par.prop and the sources of srcStem are in single precision -->
     </runPar>
     <configPar>
-        <fileStem>/path/to/ckpoint_lat</fileStem>
-        <begin>280</begin>
-        <end>281</end> <!-- must be gtr than final config to be used -->
+        <fileStem>/scratch/project_465003160/gauge/DWF/C1/ckpoint_lat</fileStem>
+        <begin>2000</begin>
+        <end>2001</end> <!-- must be gtr than final config to be used -->
         <step>40</step>
-        <source_loc>0 21 23 19</source_loc>
+        <source_loc>14 17 2 28</source_loc>
         <sources>
             <elem>0</elem>
             <elem>32</elem>
@@ -36,8 +36,8 @@
         <Tmax>64</Tmax>
     </configPar>
     <hdwfPar> <!-- only the quark name and prop are used (wall file names) -->
-        <quark>b</quark>
-        <mass>0.45</mass>
+        <quark>h</quark>
+        <mass>0.64</mass>
         <Ls>12</Ls>
         <M5>1.0</M5>
         <b>1.5</b>
@@ -50,7 +50,7 @@
     </hdwfPar>
     <sdwfPar> <!-- wall file names, and the strange loop solves -->
         <quark>s</quark>
-        <mass>0.02477</mass>
+        <mass>0.03224</mass>
         <Ls>16</Ls>
         <M5>1.8</M5>
         <b>1.5</b>                      <!-- Moebius: placeholder, set to the ensemble -->
@@ -75,7 +75,7 @@
         <prop>none</prop>               <!-- none: <wallStem>/<quark>_<t>; else <prop>_<t>, e.g. saved by HeavyMassScan -->
     </ldwfPar>
     <mesonPar> <!-- only file_name and light are used -->
-        <file_name>ApplicationTest</file_name>
+        <file_name>/scratch/project_465003160/HQE/C1/out/EyeResults</file_name>
         <gamma_src>Gamma5 Gamma5 GammaTGamma5 GammaTGamma5</gamma_src>
         <gamma_snk>Gamma5 GammaTGamma5 Gamma5 GammaTGamma5</gamma_snk>
         <light>1</light>                  <!-- 1: light spectator and light loop, as in the saving run -->
@@ -88,7 +88,7 @@
     <flowPar> <!-- same flow as the saving run -->
         <output></output>
         <action>Wilson</action>
-        <steps>10</steps>
+        <steps>50</steps>
         <step_size>0.01</step_size>
         <meas_interval>10</meas_interval>
         <Tcoarsen>9.01</Tcoarsen>
@@ -103,12 +103,12 @@
     </stoutPar>
     <hqePar> <!-- only probeGammas and vectorGammas are used (source and sink of the eyes) -->
         <probeGammas>Gamma5</probeGammas> <!-- Gamma5 and/or GammaTGamma5 -->
-        <vectorGammas>none</vectorGammas> <!-- B* eyes: none, or a subset of GammaX GammaY GammaZ -->
+        <vectorGammas>GammaX GammaY GammaZ</vectorGammas> <!-- B* eyes: none, or a subset of GammaX GammaY GammaZ -->
         <twoQuark>false</twoQuark>
         <vertices></vertices>
         <dim7>false</dim7>
         <gammaPairs></gammaPairs>
-        <deltaB0Pairs></deltaB0Pairs>
+        <deltaB0Pairs>hqe</deltaB0Pairs>
         <topology2>false</topology2>
         <atTau0>true</atTau0>
     </hqePar>

@@ -290,7 +290,7 @@ int main(int argc, char *argv[])
             w.q["s"] = make_load_prop(application, xmlPar.dwfPars.quark+"_"+w.tag, xmlPar.dwfPars.prop, t, propIo32);
         } else {
             w.q["s"] = make_mixedmoebiusdwfpropagator(application, xmlPar.dwfPars, w.gsrc, j, boundary, twist, "trans_gauge", "trans_gaugeF", "_"+w.tag);
-            step0.push_back(make_wardid(application, w.q["s"], "DWF_action_"+xmlPar.dwfPars.quark+"_"+tag0, xmlPar.dwfPars.mass, w.gsrc, "", "WardId_"+xmlPar.dwfPars.quark+w.tag));
+            step0.push_back(make_wardid(application, w.q["s"], "MDWF_action_"+xmlPar.dwfPars.quark+"_"+tag0, xmlPar.dwfPars.mass, w.gsrc, "", "WardId_"+xmlPar.dwfPars.quark+w.tag));
         }
 
         // light quark
@@ -298,7 +298,7 @@ int main(int argc, char *argv[])
             w.q["l"] = make_load_prop(application, xmlPar.dwfParl.quark+"_"+w.tag, xmlPar.dwfParl.prop, t, propIo32);
         } else if (light) {
             w.q["l"] = make_mixedmoebiusdwfpropagator(application, xmlPar.dwfParl, w.gsrc, j, boundary, twist, "trans_gauge", "trans_gaugeF", "_"+w.tag);
-            step0.push_back(make_wardid(application, w.q["l"], "DWF_action_"+xmlPar.dwfParl.quark+"_"+tag0, xmlPar.dwfParl.mass, w.gsrc, "", "WardId_"+xmlPar.dwfParl.quark+w.tag));
+            step0.push_back(make_wardid(application, w.q["l"], "MDWF_action_"+xmlPar.dwfParl.quark+"_"+tag0, xmlPar.dwfParl.mass, w.gsrc, "", "WardId_"+xmlPar.dwfParl.quark+w.tag));
         }
         walls.push_back(w);
     }
