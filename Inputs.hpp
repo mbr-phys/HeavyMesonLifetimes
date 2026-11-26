@@ -109,6 +109,7 @@ namespace XmlInputs
                                         std::string, gammaPairs,    // dim-7 four-quark gamma pairs, empty = "diag"
                                         std::string, deltaB0Pairs,  // DeltaHs0_T1 operator pairs: empty/hqe (diag + vector-class penguin pairs, 32), diag, all or "(G1 G2)..."
                                         bool, topology2,            // DeltaHs0_T2 legs (q_i, q_i, h_f, h_f): not a B->B 3pt, round-1 regression only
+                                        bool, kaonMixing,           // dim-6 DeltaS=2 ls_DeltaHs2 (legs s_i, l_i, l_f, s_f), needs mesonPar.light = 1
                                         bool, atTau0);              // also run the HeavyMeson3pt/WeakNonEye3ptDeriv instances at zero flow time
     };
 

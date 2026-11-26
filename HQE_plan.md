@@ -451,6 +451,7 @@ WriteResultGroup(corrgroups)
 | dim-7 $\Delta B=2$ (`WeakNonEye3ptDeriv`) | `sh_DeltaHs2_dim7_G5_G5_t<t>_dt<Δt>_<τ>`; with $A_0$ also `…_G5_GTG5_…` etc. | `in`, `out`, and `contractions[]` entries `{deriv = none \| qLeft@3 \| … \| qBarLeft qLeft@0123, gamma1, gamma2, trace, corr[0][t]}` |
 
 `lh_…` likewise for the light spectator. With probes = {P}, the dim-6 names are exactly round 1's.
+With `hqePar.kaonMixing`, `ls_DeltaHs2_<G>_<G>_t<t_i>_dt<Δt>_<τ>` is the $\Delta S=2$ kaon-mixing analogue (legs $s_i, l_i, l_f, s_f$, 16 G, both traces).
 The analysis reads `HeavyMeson3pt` entries by their `gamma` triad and `WeakNonEye3ptDeriv` entries by `deriv`/`gamma1`/`gamma2`/`trace`,
 not by position.
 
@@ -811,3 +812,12 @@ Known issues found in the review, not fixed:
 - `FermionFlow_Eyes` reads `stoutPar` only with `stout` (it must match the saving run); inputs and README updated.
 - To check on the first build: with `thin` every output equals the previous code; with `stout` the light/strange 2pts and eyes'
   light loops are unchanged, and `WilsonFlowV` observables lead `WilsonFlow` by roughly τ_s.
+
+### Kaon mixing (2026-11-26): NOT compiled or run
+- New input `hqePar.kaonMixing` (bool; needs `mesonPar.light = 1`, else the run stops). Adds one `WeakNonEye3ptDeriv` (`legs = none`,
+  `diag`) per probe pair, wall pair and τ (including τ = 0): `ls_DeltaHs2_<G>_<G>_t<t_i>_dt<Δt>_<τ>`, the `DeltaHs2` contraction with legs
+  $(s_i, l_i, l_f, s_f)$ on the thin links. The 16 Γ⊗Γ with both traces give the full $\Delta S=2$ SUSY basis $O_1$–$O_5$; $\Delta F=2$ has
+  no eyes, so `FermionFlow_Eyes` is unchanged (its input only gets the field, `false`). No new solves or flows: the `s`, `l` walls are
+  already flowed. The ratios use the existing `ls_` P and A₀ 2pts.
+- Not added: $(l\,l)$ ($\pi^-\to\pi^+$, 0νββ) and $(s\,s)$, same contraction if wanted later.
+- Analysis: the `deltaTs` were chosen for B mesons; the kaon's backward (T−Δt) contribution is much larger.

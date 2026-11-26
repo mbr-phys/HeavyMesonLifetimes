@@ -116,6 +116,7 @@
         <gammaPairs></gammaPairs>         <!-- dim-7 DeltaB=2 (WeakNonEye3ptDeriv) gamma pairs; empty = diag (16 G x G) -->
         <deltaB0Pairs>hqe</deltaB0Pairs>  <!-- DeltaHs0_T1 operator pairs: empty or hqe = diag + the 16 off-diagonal pairs of the vector-class penguins (32); diag, all, or "(G1 G2)..." -->
         <topology2>false</topology2>     <!-- DeltaHs0_T2 (old topology 2, not B -> B): true only for the round-1 regression -->
+        <kaonMixing>true</kaonMixing>  <!-- DeltaS=2 kaon mixing ls_DeltaHs2 (s_i, l_i, l_f, s_f): needs mesonPar.light = 1 -->
         <atTau0>true</atTau0>
     </hqePar>
     <stochasticPar> <!-- read only if runPar.eyes = 1; FermionFlow_Eyes reads its own copy (run/input_eyes.xml) -->

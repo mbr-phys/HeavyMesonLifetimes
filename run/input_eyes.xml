@@ -110,6 +110,7 @@
         <gammaPairs></gammaPairs>
         <deltaB0Pairs>hqe</deltaB0Pairs>
         <topology2>false</topology2>
+        <kaonMixing>false</kaonMixing>
         <atTau0>true</atTau0>
     </hqePar>
     <stochasticPar>

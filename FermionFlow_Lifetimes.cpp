@@ -130,6 +130,9 @@ int main(int argc, char *argv[])
                   << "the sources must match those of the saving run (same runId and smearing)" << std::endl;
     }
     const bool propIo32 = (runPar.propIo32 == 1);
+    if (hqePar.kaonMixing && !light) {
+        return fail("hqePar.kaonMixing needs mesonPar.light = 1");
+    }
     if (eyes && (xmlPar.stochasticPar.nSrcs == 0 || xmlPar.stochasticPar.nsparse == 0)) {
         return fail("stochasticPar.nSrcs and stochasticPar.nsparse must be positive when runPar.eyes = 1");
     }
@@ -444,6 +447,23 @@ int main(int argc, char *argv[])
                             const std::string g = "_" + probeTag(gIn) + "_" + probeTag(gOut);
                             group.push_back(make_weaknoneye_deriv(application, hi, qi, qf, hf, gI, gO, gammaPairs, dim7Specs(), gauges.light, flowPar.bc, pre+"DeltaHs2_dim7"+g+suf, legGauges));
                         }
+                    }
+                }
+            }
+        }
+
+        // dim-6 DeltaS=2 (kaon mixing): the DeltaHs2 contraction with the strange quark in the heavy role, legs
+        // (qBarLeft, qLeft, qBarRight, qRight) = (s_i, l_i, l_f, s_f), all 16 G x G. No eyes, no dim 7
+        if (hqePar.kaonMixing) {
+            for (auto &p : pairs) {
+                const Wall &wi = walls[p.i], &wf = walls[p.f];
+                const std::string si = qt(wi, "s"), sf = qt(wf, "s"), li = qt(wi, "l"), lf = qt(wf, "l");
+                const std::string suf = "_t" + wi.tag + "_dt" + std::to_string(p.dT) + "_" + label;
+                for (auto &gIn : probes) {
+                    for (auto &gOut : probes) {
+                        Gamma::Algebra gI = strToVec<Gamma::Algebra>(gIn)[0], gO = strToVec<Gamma::Algebra>(gOut)[0];
+                        const std::string g = "_" + probeTag(gIn) + "_" + probeTag(gOut);
+                        group.push_back(make_weaknoneye_deriv(application, si, li, lf, sf, gI, gO, "diag", {deriv("none", "", "")}, gauges.light, flowPar.bc, "ls_DeltaHs2"+g+suf));
                     }
                 }
             }
