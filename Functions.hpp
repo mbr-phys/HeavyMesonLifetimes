@@ -309,16 +309,17 @@ std::vector<std::string> make_flow_chain(Application &application, XmlInputs::Fl
     struct Chain
     {
         std::string prefix;
-        std::vector<std::string> props;
+        std::vector<std::string> fields; // unflowed field names, the base of every <field>_t<label>
+        std::vector<std::string> props;  // inputs to the next step (the previous step's outputs)
         std::string gauge;
     };
     std::vector<Chain> chains;
     if (gauge.heavy == gauge.light) {
         std::vector<std::string> fields = heavyFields;
         fields.insert(fields.end(), lightFields.begin(), lightFields.end());
-        chains = {{"WilsonFlow_t", fields, gauge.light}};
+        chains = {{"WilsonFlow_t", fields, fields, gauge.light}};
     } else {
-        chains = {{"WilsonFlow_t", lightFields, gauge.light}, {"WilsonFlowV_t", heavyFields, gauge.heavy}};
+        chains = {{"WilsonFlow_t", lightFields, lightFields, gauge.light}, {"WilsonFlowV_t", heavyFields, heavyFields, gauge.heavy}};
     }
 
     std::vector<std::string> groups;
@@ -336,7 +337,7 @@ std::vector<std::string> make_flow_chain(Application &application, XmlInputs::Fl
         for (auto &c : chains) {
             const std::string flowName = c.prefix + label;
             std::vector<std::string> outProps = {};
-            for (auto &f : c.props) {
+            for (auto &f : c.fields) {
                 outProps.push_back(f + "_t" + label);
             }
             stepi.push_back(make_fermionflow(application, flowName, c.gauge, c.props, outProps, n - prevStep, flowPar));
